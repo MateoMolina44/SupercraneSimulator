@@ -46,6 +46,26 @@ namespace SupercraneSimulator.Editor.SceneBuilder
             return material;
         }
 
+        public static PhysicsMaterial PhysicsMaterial(string name, float dynamicFriction, float staticFriction)
+        {
+            const string folder = "Assets/_Project/Physics";
+            EnsureFolder(folder);
+            var path = $"{folder}/{name}.physicMaterial";
+            var material = AssetDatabase.LoadAssetAtPath<PhysicsMaterial>(path);
+            if (material == null)
+            {
+                material = new PhysicsMaterial(name);
+                AssetDatabase.CreateAsset(material, path);
+            }
+
+            material.dynamicFriction = dynamicFriction;
+            material.staticFriction = staticFriction;
+            material.bounciness = 0f;
+            material.frictionCombine = PhysicsMaterialCombine.Average;
+            EditorUtility.SetDirty(material);
+            return material;
+        }
+
         /// <summary>Material URP Lit transparente (vidrio). El alfa de <paramref name="color"/> define la opacidad.</summary>
         public static Material TransparentMaterial(string name, Color color)
         {

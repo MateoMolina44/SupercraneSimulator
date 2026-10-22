@@ -1,5 +1,6 @@
 using SupercraneSimulator.Cameras;
 using SupercraneSimulator.Crane;
+using SupercraneSimulator.Gameplay;
 using SupercraneSimulator.Input;
 using SupercraneSimulator.UI;
 using UnityEditor;
@@ -29,6 +30,16 @@ namespace SupercraneSimulator.Editor.SceneBuilder
         private const float QuayEdgeZ = 10f;
         private const float WaterY = -2f;
         private const float DeckY = 1f;
+
+        // Zona de apilado en el muelle, al alcance del carro (z 2 a 10) y del pórtico (x ±15).
+        private static readonly Vector3 StackZoneCenter = new Vector3(-5f, 0f, 4.7f);
+        private static readonly Vector3 StackZoneSize = new Vector3(14f, 15f, 5f);
+
+        // Medidas de las cargas (contenedor de 20 pies: largo × alto × ancho).
+        private static readonly Vector3 ContainerSize = new Vector3(6.1f, 2.6f, 2.44f);
+        private const float CrateSize = 1.5f;
+        private const float ContainerMass = 800f;
+        private const float CrateMass = 150f;
 
         private const float HoistTopY = GirderTopY - 0.7f;
 
@@ -83,8 +94,12 @@ namespace SupercraneSimulator.Editor.SceneBuilder
             var external = BuildExternalCamera(cameras);
             var switcher = new GameObject("CameraSwitcher").AddComponent<CameraSwitcher>();
             switcher.transform.SetParent(cameras, false);
+            var loadsGroup = Group("--- Loads ---");
+            var loads = BuildLoads(loadsGroup);
+            var zone = BuildStackZone(environment, loads);
+
             var ui = Group("--- UI ---");
-            var cameraLabel = BuildUi(ui, controller, switcher);
+            var cameraLabel = BuildUi(ui, controller, switcher, zone, crane.Grabber);
             switcher.Configure(input, cameraLabel,
                 new[] { external, crane.CabinCamera, crane.CraneCamera },
                 new[] { "Cámara: Externa (C)", "Cámara: Cabina (C)", "Cámara: Grúa (C)" });
@@ -145,6 +160,7 @@ namespace SupercraneSimulator.Editor.SceneBuilder
             public DrivenJoint Spreader;
             public Camera CabinCamera;
             public Camera CraneCamera;
+            public SpreaderGrabber Grabber;
         }
 
         private static CraneParts BuildCrane(CraneInput input)
@@ -195,6 +211,21 @@ namespace SupercraneSimulator.Editor.SceneBuilder
             spreader.xDrive = Drive(-185f, 185f, 0f, 400f, 40f);
             Box(spreader.transform, "SpreaderFrame", new Vector3(0f, -0.25f, 0f), new Vector3(6.1f, 0.5f, 2.5f), _materials.Yellow);
             parts.Spreader = Driven(spreader, "Spreader", -180f, 180f, 0f, 0f, 30f, 0.6f);
+
+            // Luces de estado en las esquinas: rojo sin carga, amarillo carga lista, verde enganchado.
+            var lights = new Renderer[4];
+            var corner = 0;
+            foreach (var x in new[] { -2.9f, 2.9f })
+            {
+                foreach (var z in new[] { -1.1f, 1.1f })
+                {
+                    lights[corner++] = Box(spreader.transform, "StatusLight", new Vector3(x, 0.1f, z), new Vector3(0.25f, 0.2f, 0.25f),
+                        _materials.Light, false).GetComponent<Renderer>();
+                }
+            }
+
+            parts.Grabber = spreader.gameObject.AddComponent<SpreaderGrabber>();
+            parts.Grabber.Configure(input, lights);
 
             foreach (var body in new[] { gantry, trolley, hoist, cableUpper, cableLower, spreader })
             {
@@ -412,6 +443,78 @@ namespace SupercraneSimulator.Editor.SceneBuilder
             return link;
         }
 
+        // ---------------------------------------------------------------- Cargas y zona
+
+        /// <summary>4 contenedores y 4 cajas sobre la cubierta del barco (z 11 a 23).</summary>
+        private static Load[] BuildLoads(Transform parent)
+        {
+            var friction = BuilderAssets.PhysicsMaterial("LoadFriction", 0.6f, 0.7f);
+            var containerColors = new[] { _materials.ContainerBlue, _materials.ContainerGreen, _materials.ContainerOrange, _materials.ContainerGrey };
+            var containerPositions = new[]
+            {
+                new Vector2(-4f, 14f), new Vector2(4f, 14f), new Vector2(-4f, 17.5f), new Vector2(4f, 17.5f)
+            };
+            var cratePositions = new[]
+            {
+                new Vector2(11f, 13f), new Vector2(11f, 16f), new Vector2(11f, 19f), new Vector2(-11f, 16f)
+            };
+
+            var loads = new Load[containerPositions.Length + cratePositions.Length];
+            for (var i = 0; i < containerPositions.Length; i++)
+            {
+                var position = new Vector3(containerPositions[i].x, DeckY + ContainerSize.y / 2f + 0.01f, containerPositions[i].y);
+                var container = LoadBody(parent, $"Container_{i + 1:00}", position, ContainerSize, containerColors[i], ContainerMass, friction, LoadKind.Container);
+                // Puertas en un extremo, para que se note el sentido del contenedor.
+                Box(container.transform, "Doors", new Vector3(ContainerSize.x / 2f + 0.01f, 0f, 0f),
+                    new Vector3(0.02f, ContainerSize.y - 0.2f, ContainerSize.z - 0.2f), _materials.Dark, false);
+                loads[i] = container;
+            }
+
+            for (var i = 0; i < cratePositions.Length; i++)
+            {
+                var position = new Vector3(cratePositions[i].x, DeckY + CrateSize / 2f + 0.01f, cratePositions[i].y);
+                loads[containerPositions.Length + i] = LoadBody(parent, $"Crate_{i + 1:00}", position, Vector3.one * CrateSize,
+                    _materials.Wood, CrateMass, friction, LoadKind.Crate);
+            }
+
+            return loads;
+        }
+
+        private static Load LoadBody(Transform parent, string name, Vector3 position, Vector3 size, Material material,
+            float mass, PhysicsMaterial friction, LoadKind kind)
+        {
+            var go = Box(parent, name, position, size, material);
+            go.GetComponent<BoxCollider>().sharedMaterial = friction;
+            var body = go.AddComponent<Rigidbody>();
+            body.mass = mass;
+            body.interpolation = RigidbodyInterpolation.Interpolate;
+            body.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
+            var load = go.AddComponent<Load>();
+            load.Configure(kind);
+            return load;
+        }
+
+        private static StackZone BuildStackZone(Transform parent, Load[] loads)
+        {
+            var zone = new GameObject("StackZone").transform;
+            zone.SetParent(parent, false);
+            zone.position = StackZoneCenter;
+
+            // Pintura en el piso: relleno y borde amarillo (sin collider, apenas sobre el muelle).
+            const float paintHeight = 0.01f;
+            const float line = 0.2f;
+            var size = StackZoneSize;
+            Box(zone, "Fill", new Vector3(0f, 0.006f, 0f), new Vector3(size.x, paintHeight, size.z), _materials.ZoneFill, false);
+            Box(zone, "Line_N", new Vector3(0f, 0.008f, size.z / 2f - line / 2f), new Vector3(size.x, paintHeight, line), _materials.Yellow, false);
+            Box(zone, "Line_S", new Vector3(0f, 0.008f, -size.z / 2f + line / 2f), new Vector3(size.x, paintHeight, line), _materials.Yellow, false);
+            Box(zone, "Line_E", new Vector3(size.x / 2f - line / 2f, 0.008f, 0f), new Vector3(line, paintHeight, size.z), _materials.Yellow, false);
+            Box(zone, "Line_W", new Vector3(-size.x / 2f + line / 2f, 0.008f, 0f), new Vector3(line, paintHeight, size.z), _materials.Yellow, false);
+
+            var stackZone = zone.gameObject.AddComponent<StackZone>();
+            stackZone.Configure(loads, size);
+            return stackZone;
+        }
+
         // ---------------------------------------------------------------- Cámaras y UI
 
         private static Camera BuildExternalCamera(Transform parent)
@@ -428,7 +531,8 @@ namespace SupercraneSimulator.Editor.SceneBuilder
         }
 
         /// <summary>Arma el HUD y devuelve el texto del botón de cámara.</summary>
-        private static Text BuildUi(Transform parent, CraneController controller, CameraSwitcher switcher)
+        private static Text BuildUi(Transform parent, CraneController controller, CameraSwitcher switcher,
+            StackZone zone, SpreaderGrabber grabber)
         {
             var eventSystem = new GameObject("EventSystem", typeof(EventSystem), typeof(InputSystemUIInputModule));
             eventSystem.transform.SetParent(parent, false);
@@ -456,6 +560,14 @@ namespace SupercraneSimulator.Editor.SceneBuilder
             var buttonLabel = Label(buttonRect, "Text", Vector2.zero, new Vector2(230f, 44f), TextAnchor.MiddleCenter);
             buttonLabel.text = "Cámara (C)";
             UnityEventTools.AddPersistentListener(button.onClick, switcher.Next);
+            // Contador de apiladas y estado del spreader: arriba al centro.
+            var counterPanel = Panel(canvas, "StackCounter", new Vector2(0.5f, 1f), new Vector2(0f, -16f), new Vector2(400f, 64f));
+            var counter = Label(counterPanel, "Count", new Vector2(0f, 12f), new Vector2(400f, 30f), TextAnchor.MiddleCenter);
+            counter.fontSize = 22;
+            var spreaderState = Label(counterPanel, "SpreaderState", new Vector2(0f, -14f), new Vector2(400f, 26f), TextAnchor.MiddleCenter);
+            spreaderState.fontSize = 15;
+            counterPanel.gameObject.AddComponent<StackCounterView>().Configure(zone, grabber, counter, spreaderState);
+
             return buttonLabel;
         }
 
@@ -617,6 +729,13 @@ namespace SupercraneSimulator.Editor.SceneBuilder
             public readonly Material Concrete = BuilderAssets.Material("Concrete", new Color(0.55f, 0.55f, 0.53f), 0.1f);
             public readonly Material Water = BuilderAssets.Material("Water", new Color(0.12f, 0.3f, 0.45f), 0.9f);
             public readonly Material Hull = BuilderAssets.Material("ShipHull", new Color(0.15f, 0.18f, 0.22f));
+            public readonly Material ContainerBlue = BuilderAssets.Material("ContainerBlue", new Color(0.12f, 0.3f, 0.6f));
+            public readonly Material ContainerGreen = BuilderAssets.Material("ContainerGreen", new Color(0.15f, 0.45f, 0.25f));
+            public readonly Material ContainerOrange = BuilderAssets.Material("ContainerOrange", new Color(0.85f, 0.4f, 0.1f));
+            public readonly Material ContainerGrey = BuilderAssets.Material("ContainerGrey", new Color(0.5f, 0.52f, 0.55f));
+            public readonly Material Wood = BuilderAssets.Material("Wood", new Color(0.72f, 0.55f, 0.33f), 0.15f);
+            public readonly Material ZoneFill = BuilderAssets.Material("ZoneFill", new Color(0.62f, 0.6f, 0.45f), 0.1f);
+            public readonly Material Light = BuilderAssets.Material("StatusLight", new Color(0.85f, 0.1f, 0.1f), 0.8f);
             public readonly Material Glass = BuilderAssets.TransparentMaterial("Glass", new Color(0.55f, 0.7f, 0.78f, 0.18f));
             public readonly Material CabinFrame = BuilderAssets.Material("CabinFrame", new Color(0.36f, 0.62f, 0.52f), 0.4f);
             public readonly Material CabinPanel = BuilderAssets.Material("CabinPanel", new Color(0.42f, 0.7f, 0.6f), 0.3f);
