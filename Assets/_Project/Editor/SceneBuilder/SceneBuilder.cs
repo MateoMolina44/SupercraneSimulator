@@ -32,6 +32,18 @@ namespace SupercraneSimulator.Editor.SceneBuilder
 
         private const float HoistTopY = GirderTopY - 0.7f;
 
+        // Masas (kg). El conjunto que sostiene la carga es pesado, como en una STS real, y
+        // los vecinos mantienen una relación de 2,5:1 como mucho.
+        private const float GantryMass = 3000f;
+        private const float TrolleyMass = 2000f;
+        private const float HoistMass = 1500f;
+        private const float CableMass = 800f;
+        private const float SpreaderMass = 2000f;
+
+        // Amortiguación de los eslabones de cable: hace de anti-balanceo (en una STS real los
+        // cables van en trapecio y el balanceo muere rápido).
+        private const float CableSwingDamping = 15f;
+
         // Posición inicial de cada joint (dentro del rango).
         private const float GantryStart = 0f;
         private const float TrolleyStart = 6f;
@@ -148,13 +160,13 @@ namespace SupercraneSimulator.Editor.SceneBuilder
             // DrivenJoint lo traduce a la medida real que se muestra.
 
             // 2. Pórtico: Prismatic sobre los rieles (eje X del mundo).
-            var gantry = Body("Gantry", baseBody.transform, new Vector3(GantryStart, 0f, 0f), 2000f);
-            parts.Gantry = DrivenPrismatic(gantry, Quaternion.identity, "Pórtico", -15f, 15f, GantryStart, 3f, 200f, 30f);
+            var gantry = Body("Gantry", baseBody.transform, new Vector3(GantryStart, 0f, 0f), GantryMass);
+            parts.Gantry = DrivenPrismatic(gantry, Quaternion.identity, "Pórtico", -15f, 15f, GantryStart, 1.5f, 2.5f, 200f, 30f);
             BuildGantryVisuals(gantry.transform);
 
             // 3. Carro: Prismatic a lo largo de la viga (eje Z).
-            var trolley = Body("Trolley", gantry.transform, new Vector3(GantryStart, GirderTopY, TrolleyStart), 1000f);
-            parts.Trolley = DrivenPrismatic(trolley, Quaternion.Euler(0f, -90f, 0f), "Carro", 2f, 20f, TrolleyStart, 3f, 200f, 30f);
+            var trolley = Body("Trolley", gantry.transform, new Vector3(GantryStart, GirderTopY, TrolleyStart), TrolleyMass);
+            parts.Trolley = DrivenPrismatic(trolley, Quaternion.Euler(0f, -90f, 0f), "Carro", 2f, 20f, TrolleyStart, 2.5f, 2.5f, 200f, 30f);
             Box(trolley.transform, "TrolleyFrame", new Vector3(0f, 0.5f, 0f), new Vector3(4f, 1f, 3f), _materials.CraneRed, false);
             parts.CabinCamera = BuildCabin(trolley.transform);
             parts.CraneCamera = BuildCraneCamera(trolley.transform);
@@ -162,8 +174,8 @@ namespace SupercraneSimulator.Editor.SceneBuilder
 
             // 4. Izaje: Prismatic vertical hacia abajo. 0 m es el gancho arriba de todo.
             var hoistPosition = new Vector3(GantryStart, HoistTopY - HoistStart, TrolleyStart);
-            var hoist = Body("Hoist", trolley.transform, hoistPosition, 500f);
-            parts.Hoist = DrivenPrismatic(hoist, Quaternion.Euler(0f, 0f, -90f), "Izaje", 0f, 12f, HoistStart, 2f, 400f, 40f);
+            var hoist = Body("Hoist", trolley.transform, hoistPosition, HoistMass);
+            parts.Hoist = DrivenPrismatic(hoist, Quaternion.Euler(0f, 0f, -90f), "Izaje", 0f, 12f, HoistStart, 1.5f, 1f, 400f, 40f);
             Box(hoist.transform, "HeadBlock", Vector3.zero, new Vector3(1.4f, 0.6f, 1.4f), _materials.Yellow, false);
             SetBoxInertia(hoist, new Vector3(1.4f, 0.6f, 1.4f), Vector3.zero);
             BuildRopes(trolley.transform, hoist.transform);
@@ -173,14 +185,14 @@ namespace SupercraneSimulator.Editor.SceneBuilder
             var cableLower = CableLink("CableLower", cableUpper.transform, cableUpper.transform.position + Vector3.down);
 
             // 7. Spreader: Revolute en Y, ±180°.
-            var spreader = Body("Spreader", cableLower.transform, cableLower.transform.position + Vector3.down, 500f);
+            var spreader = Body("Spreader", cableLower.transform, cableLower.transform.position + Vector3.down, SpreaderMass);
             spreader.jointType = ArticulationJointType.RevoluteJoint;
             spreader.anchorRotation = Quaternion.Euler(0f, 0f, 90f);
             spreader.twistLock = ArticulationDofLock.LimitedMotion;
             // El límite físico pasa apenas de ±180° para que el target nunca quede sobre el tope.
             spreader.xDrive = Drive(-185f, 185f, 0f, 400f, 40f);
             Box(spreader.transform, "SpreaderFrame", new Vector3(0f, -0.25f, 0f), new Vector3(6.1f, 0.5f, 2.5f), _materials.Yellow);
-            parts.Spreader = Driven(spreader, "Spreader", -180f, 180f, 0f, 0f, 45f);
+            parts.Spreader = Driven(spreader, "Spreader", -180f, 180f, 0f, 0f, 30f, 0.6f);
 
             foreach (var body in new[] { gantry, trolley, hoist, cableUpper, cableLower, spreader })
             {
@@ -355,7 +367,7 @@ namespace SupercraneSimulator.Editor.SceneBuilder
 
         private static ArticulationBody CableLink(string name, Transform parent, Vector3 pivot)
         {
-            var link = Body(name, parent, pivot, 200f);
+            var link = Body(name, parent, pivot, CableMass);
             link.jointType = ArticulationJointType.SphericalJoint;
             // El eje de twist (X del ancla) apunta a lo largo del cable.
             link.anchorRotation = Quaternion.Euler(0f, 0f, 90f);
@@ -363,15 +375,15 @@ namespace SupercraneSimulator.Editor.SceneBuilder
             link.swingYLock = ArticulationDofLock.LimitedMotion;
             link.swingZLock = ArticulationDofLock.LimitedMotion;
             // Pasivo: sin rigidez ni target, solo un poco de amortiguación.
-            link.yDrive = Drive(-45f, 45f, 0f, 0f, 0.5f);
-            link.zDrive = Drive(-45f, 45f, 0f, 0f, 0.5f);
+            link.yDrive = Drive(-45f, 45f, 0f, 0f, CableSwingDamping);
+            link.zDrive = Drive(-45f, 45f, 0f, 0f, CableSwingDamping);
             Shape(link.transform, "Wire", BuilderAssets.Cylinder(0.08f, 1f), new Vector3(0f, -0.5f, 0f), _materials.Steel);
-            // Inercia inflada a propósito: con la real (Iyy ≈ 3) el solver no transmite el torque
-            // del spreader (Iyy ≈ 1800) y el giro queda flojo y oscila.
+            // Inercia inflada a propósito: con la real (Iyy ≈ 10) el solver no transmite el torque
+            // del spreader (Iyy ≈ 7000) y el giro queda flojo y oscila.
             link.automaticCenterOfMass = false;
             link.centerOfMass = new Vector3(0f, -0.5f, 0f);
             link.automaticInertiaTensor = false;
-            link.inertiaTensor = new Vector3(150f, 800f, 150f);
+            link.inertiaTensor = new Vector3(600f, 3200f, 600f);
             link.inertiaTensorRotation = Quaternion.identity;
             return link;
         }
@@ -481,7 +493,7 @@ namespace SupercraneSimulator.Editor.SceneBuilder
         /// están en la medida real; los límites físicos se corren para que start sea jointPosition 0.
         /// </summary>
         private static DrivenJoint DrivenPrismatic(ArticulationBody body, Quaternion axisRotation, string label,
-            float min, float max, float start, float speed, float stiffness, float damping)
+            float min, float max, float start, float speed, float rampTime, float stiffness, float damping)
         {
             body.jointType = ArticulationJointType.PrismaticJoint;
             body.anchorRotation = axisRotation;
@@ -489,7 +501,7 @@ namespace SupercraneSimulator.Editor.SceneBuilder
             body.linearLockY = ArticulationDofLock.LockedMotion;
             body.linearLockZ = ArticulationDofLock.LockedMotion;
             body.xDrive = Drive(min - start, max - start, 0f, stiffness, damping);
-            return Driven(body, label, min, max, start, start, speed);
+            return Driven(body, label, min, max, start, start, speed, rampTime);
         }
 
         /// <summary>
@@ -510,10 +522,10 @@ namespace SupercraneSimulator.Editor.SceneBuilder
             };
         }
 
-        private static DrivenJoint Driven(ArticulationBody body, string label, float min, float max, float initial, float offset, float speed)
+        private static DrivenJoint Driven(ArticulationBody body, string label, float min, float max, float initial, float offset, float speed, float rampTime)
         {
             var joint = body.gameObject.AddComponent<DrivenJoint>();
-            joint.Configure(label, min, max, initial, offset, speed);
+            joint.Configure(label, min, max, initial, offset, speed, rampTime);
             return joint;
         }
 

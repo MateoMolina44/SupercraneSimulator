@@ -73,7 +73,14 @@ namespace SupercraneSimulator.Crane
         {
             var maxSpeed = _speed * _speedMultiplier;
             var acceleration = maxSpeed / _rampTime;
-            _targetSpeed = Mathf.MoveTowards(_targetSpeed, input * maxSpeed, acceleration * deltaTime);
+            var desiredSpeed = input * maxSpeed;
+
+            // Cerca de un tope, la velocidad se limita a la que permite frenar justo ahí.
+            var distanceToLimit = desiredSpeed > 0f ? _max - _target : _target - _min;
+            var brakingSpeed = Mathf.Sqrt(2f * acceleration * Mathf.Max(0f, distanceToLimit));
+            desiredSpeed = Mathf.Clamp(desiredSpeed, -brakingSpeed, brakingSpeed);
+
+            _targetSpeed = Mathf.MoveTowards(_targetSpeed, desiredSpeed, acceleration * deltaTime);
             if (Mathf.Approximately(_targetSpeed, 0f))
             {
                 return;
@@ -91,7 +98,7 @@ namespace SupercraneSimulator.Crane
         }
 
         /// <summary>Lo usa el SceneBuilder para dejar el joint configurado en la escena.</summary>
-        public void Configure(string label, float min, float max, float initialTarget, float offset, float speed)
+        public void Configure(string label, float min, float max, float initialTarget, float offset, float speed, float rampTime)
         {
             _label = label;
             _min = min;
@@ -99,6 +106,7 @@ namespace SupercraneSimulator.Crane
             _initialTarget = initialTarget;
             _offset = offset;
             _speed = speed;
+            _rampTime = rampTime;
         }
 
         private void ApplyTarget()
