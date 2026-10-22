@@ -2,113 +2,183 @@
 
 Este documento describe **qué** hace el simulador y **cómo** se arma la grúa.
 Las restricciones duras están en [CLAUDE.md](CLAUDE.md). Si algo de acá las
-contradice, manda CLAUDE.md.
-
-Los valores marcados con `TBD` se definen con las preguntas de diseño y se
-registran en [DECISIONS.md](DECISIONS.md).
+contradice, manda CLAUDE.md. Las decisiones y su motivo están en
+[DECISIONS.md](DECISIONS.md).
 
 ## 1. Experiencia
 
-- El jugador opera una grúa torre desde la cabina o desde una cámara externa.
-- Hay cajas y contenedores sueltos (Rigidbody comunes) en el suelo.
-- La tarea es engancharlos y apilarlos dentro de una **zona marcada**.
-- La pantalla muestra, para cada joint con drive, el **target** pedido y el
-  **valor real** leído de `jointPosition`.
+- El jugador opera una **grúa pórtico portuaria STS** sobre rieles en un
+  muelle, desde la cabina (colgada del carro) o desde una cámara orbital.
+- Junto al muelle hay un **barco estático** con 4 contenedores y 4 cajas en
+  cubierta.
+- La tarea es engancharlos con el **spreader** y apilarlos en la **zona
+  marcada** del muelle.
+- Un contador muestra `Apiladas: N / 8`.
+- La pantalla muestra, para cada joint con drive, el **target** y el **valor
+  real** leído de `jointPosition`.
 
-## 2. Árbol de Articulation Bodies
+## 2. Ejes y medidas
+
+Ejes del mundo:
+
+- **X:** a lo largo del muelle (dirección de los rieles).
+- **Z:** perpendicular al muelle; Z+ va hacia el agua y el barco.
+- **Y:** arriba.
+
+| Elemento | Medida |
+|---|---|
+| Luz del pórtico (entre patas) | ~20 m |
+| Altura de la viga | ~15 m (ajustar para que el spreader llegue al suelo) |
+| Recorrido sobre rieles | ±15 m |
+| Recorrido del carro | 2 a 20 m (≈2-10 m sobre muelle, ≈10-20 m sobre el barco) |
+| Recorrido del izaje | 0 a 12 m |
+| Eslabones de cable | ~1 m cada uno |
+| Contenedor 20' | 6,1 × 2,6 × 2,4 m |
+| Caja | ~1,5 m de lado |
+
+## 3. Árbol de Articulation Bodies
 
 7 cuerpos. **No se agregan más.**
 
 ```
-Tower            (raíz, immovable)
-└─ Jib           Revolute, eje Y, drive   — pluma + cabina (malla hija)
-   └─ Trolley    Prismatic, eje de la pluma, 2 a 20 m, drive
-      └─ Hoist   Prismatic, vertical, 0 a 12 m, drive
+Base             (raíz, immovable — rieles)
+└─ Gantry        Prismatic, eje X, ±15 m, drive      — patas + viga + pluma
+   └─ Trolley    Prismatic, eje Z, 2 a 20 m, drive    — cabina (malla hija)
+      └─ Hoist   Prismatic, eje −Y, 0 a 12 m, drive
          └─ CableUpper   Spherical, pasivo
             └─ CableLower   Spherical, pasivo
-               └─ Hook   Revolute, eje Y, ±180°, drive
+               └─ Spreader  Revolute, eje Y, ±180°, drive
 ```
 
-| # | Cuerpo | Joint | Eje | Límites | Drive | Rol |
+| # | Cuerpo | Joint | Eje | Límites | Drive | Masa |
 |---|---|---|---|---|---|---|
-| 1 | Tower | Fixed (raíz) | – | – | – | Base inmóvil |
-| 2 | Jib | Revolute | Y | `TBD` (libre o limitado) | Sí | Giro de la pluma |
-| 3 | Trolley | Prismatic | X local de la pluma | 2 a 20 m | Sí | Carro |
-| 4 | Hoist | Prismatic | Y (hacia abajo) | 0 a 12 m | Sí | Largo del cable |
-| 5 | CableUpper | Spherical | – | `TBD` | No | Péndulo |
-| 6 | CableLower | Spherical | – | `TBD` | No | Péndulo |
-| 7 | Hook | Revolute | Y | ±180° | Sí | Giro del gancho |
+| 1 | Base | raíz | – | – | – | immovable |
+| 2 | Gantry | Prismatic | X | −15 a 15 m | Sí | 2000 kg |
+| 3 | Trolley | Prismatic | Z | 2 a 20 m | Sí | 1000 kg |
+| 4 | Hoist | Prismatic | −Y | 0 a 12 m | Sí | 500 kg |
+| 5 | CableUpper | Spherical | – | swing ±45° (ajustar) | No | 200 kg |
+| 6 | CableLower | Spherical | – | swing ±45° (ajustar) | No | 200 kg |
+| 7 | Spreader | Revolute | Y | ±180° | Sí | 500 kg |
 
-Cumple la consigna: 7 cuerpos (6 a 10), 3 tipos de joint (Revolute,
-Prismatic, Spherical), 4 drives, 2 cuerpos pasivos.
+Cumple la consigna: 7 cuerpos (6 a 10), 3 tipos de joint (Prismatic,
+Spherical, Revolute), 4 drives, 2 cuerpos pasivos.
+
+Cargas (Rigidbody comunes): contenedor 800 kg, caja 150 kg.
 
 ### Reglas de armado
 
 - Escala `(1,1,1)` en **toda** la jerarquía. El tamaño se da con mallas hijas
   escaladas, nunca con el transform de un cuerpo.
-- Cada ancla en el pivote real del joint.
-- La cabina y todo detalle visual son hijos de un cuerpo existente, sin
-  ArticulationBody propio.
-- Masas parecidas entre cuerpos vecinos (relación ideal ≤ 1:10). Valores
-  iniciales en la tabla de abajo, a ajustar probando.
+- Cada ancla en el pivote real del joint. Los Prismatic de Unity se mueven
+  sobre el eje X del ancla: rotar el ancla para alinearlo con X, Z o −Y.
+- Patas, viga, pluma y cabina son mallas hijas, sin ArticulationBody propio.
+- El barco, el muelle y el agua son escenografía estática con colliders.
 
-| Cuerpo | Masa inicial |
-|---|---|
-| Tower | (immovable, no importa) |
-| Jib | `TBD` |
-| Trolley | `TBD` |
-| Hoist | `TBD` |
-| CableUpper / CableLower | `TBD` |
-| Hook | `TBD` |
+### Física
+
+- Timestep 0,02 s (50 Hz). Si hay temblor, subir primero `solverIterations`
+  en los cuerpos, después ajustar damping de los drives.
+- Drives en modo Force con stiffness alto y damping moderado; valores
+  iniciales a ajustar probando.
 
 ### Unidades (verificar en Unity 6.3)
 
-- `ArticulationDrive.target`: grados en joints de rotación, metros en
-  prismáticos.
-- `jointPosition`: radianes en joints de rotación, metros en prismáticos.
-  Hay que convertir a grados antes de mostrarlo en la UI.
+- `ArticulationDrive.target`: grados en Revolute, metros en Prismatic.
+- `jointPosition`: radianes en Revolute, metros en Prismatic. Hay que
+  convertir con `Mathf.Rad2Deg` antes de mostrar.
 
-## 3. Controlador
+## 4. Controlador
 
-Patrón obligatorio de la consigna:
+Modo **target incremental**:
 
-1. `Update`: se lee la entrada (Input System o UI) y se guarda la intención.
-2. `FixedUpdate`: la intención se integra en un **target** (con velocidad
-   máxima y límites) y se escribe en el drive.
+1. `Update`: se lee la entrada (teclado o botones de UI) y se guarda un eje
+   −1/0/+1 por joint.
+2. `FixedUpdate`: `target += eje × velocidad × fixedDeltaTime`, se limita al
+   rango del joint y se escribe en el drive.
 3. Se lee `jointPosition` y se publica para la UI.
 
-Modo de control: `TBD` (posición incremental vs. velocidad).
+Al soltar la tecla, el target queda fijo y el joint se detiene ahí.
+Las velocidades se pueden cambiar desde Configuración.
 
-## 4. Enganche de cargas
+## 5. Enganche (spreader)
 
-Mecanismo: `TBD` (por ejemplo `FixedJoint` creado en runtime entre el gancho
-y la caja, o un trigger con "imán").
+- Tecla **Espacio** (o botón de UI) alterna enganchar/soltar.
+- Solo engancha si hay una carga **debajo y cerca** del spreader y su
+  orientación está dentro de **±15°** de la del spreader (módulo 180°).
+- Al enganchar se crea un `FixedJoint` entre el spreader y la carga; al
+  soltar se destruye.
+- Indicador visual en el spreader: rojo (nada), amarillo (carga válida
+  debajo), verde (enganchado).
 
-## 5. Cámaras
+## 6. Zona de apilado
 
-- **Cabina:** hija de la pluma, gira con ella.
-- **Grúa (externa):** `TBD` (fija, orbital o que sigue al gancho).
+- Volumen marcado en el muelle (trigger + decal o quad de color).
+- Una carga **cuenta** si su centro está dentro del volumen, no está
+  enganchada y su velocidad es casi 0 durante 1 s.
+- Contador `Apiladas: N / 8` en pantalla.
+
+## 7. Cámaras
+
+- **Cabina:** hija del carro, mira hacia abajo y adelante. Se mueve con el
+  carro y el pórtico.
+- **Externa:** orbital alrededor de la grúa. Clic derecho y arrastrar para
+  orbitar, rueda para zoom.
 - Cambio con la tecla **C** y con un botón de UI.
 
-## 6. UI
+## 8. UI (uGUI)
 
-- Panel de telemetría: por cada joint con drive, nombre, target y valor real.
-- Botón de cambio de cámara.
-- Controles en pantalla: `TBD`.
-- Indicador de tarea (cajas apiladas, tiempo): `TBD`.
+| Elemento | Ubicación | Notas |
+|---|---|---|
+| Telemetría | Esquina superior izquierda | Tabla: joint, target, real, unidad. Ocultable |
+| Contador | Arriba al centro | `Apiladas: N / 8` |
+| Botón de cámara | Esquina superior derecha | |
+| Controles en pantalla | Abajo | Pares ◀ ▶ que actúan mientras se mantienen + botón enganchar. Ocultables |
+| Pausa | Centro, con tecla **P** | Reanudar, Configuración, Controles, Reiniciar |
 
-## 7. Controles
+### Configuración (se guarda con PlayerPrefs)
+
+- Mostrar controles en pantalla (sí/no)
+- Mostrar telemetría (sí/no)
+- Velocidad de pórtico, carro, izaje y spreader (sliders)
+- Sensibilidad de cámara (órbita y zoom)
+- Idioma: Español / English
+
+### Idioma
+
+Tabla propia (ScriptableObject con clave → texto ES/EN) y un componente
+`LocalizedText` en cada texto. Sin el paquete Localization.
+
+## 9. Controles
 
 | Acción | Teclado | UI |
 |---|---|---|
-| Girar pluma | `TBD` | `TBD` |
-| Mover carro | `TBD` | `TBD` |
-| Subir/bajar gancho | `TBD` | `TBD` |
-| Girar gancho | `TBD` | `TBD` |
-| Enganchar/soltar | `TBD` | `TBD` |
+| Pórtico sobre rieles | A / D | ◀ ▶ |
+| Carro (muelle ↔ barco) | W / S | ◀ ▶ |
+| Subir / bajar spreader | R / F | ▲ ▼ |
+| Girar spreader | Q / E | ⟲ ⟳ |
+| Enganchar / soltar | Espacio | Botón |
 | Cambiar cámara | C | Botón |
+| Pausa | P | – |
+| Orbitar / zoom (cámara externa) | Clic derecho + mouse / rueda | – |
 
-## 8. Fuera de alcance
+**Esc no se usa:** en WebGL saca al navegador de pantalla completa.
+
+## 10. Estilo visual
+
+Primitivas de Unity con materiales URP, paleta de puerto clásico:
+
+- Grúa: rojo y blanco.
+- Contenedores: colores variados (azul, verde, naranja, gris).
+- Cajas: madera clara.
+- Muelle: gris hormigón. Agua: plano azul sin animar. Barco: casco oscuro.
+
+## 11. Recortes si falta tiempo
+
+En este orden: idioma inglés → sliders de velocidad y sensibilidad →
+controles en pantalla → detalles del barco. Lo obligatorio de la consigna y
+el build WebGL nunca se recortan.
+
+## 12. Fuera de alcance
 
 - Más Articulation Bodies que los 7 listados.
-- Viento, contrapesos dinámicos, multijugador, sonido avanzado.
+- Barco que se mece, viento, pluma abatible, multijugador, sonido avanzado.

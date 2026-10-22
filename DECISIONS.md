@@ -4,6 +4,29 @@ Registro corto de decisiones de diseño y técnicas. La más nueva va arriba.
 
 | Fecha | Tema | Decisión | Motivo |
 |---|---|---|---|
-| 2026-10-22 | Árbol de joints | 7 Articulation Bodies fijos (ver DESIGN.md) | Cumple la consigna con margen y sin cuerpos de más |
+| 2026-10-22 | Itch.io | Mateo crea la página; Claude prepara el build y los pasos | Claude no crea cuentas ni páginas |
+| 2026-10-22 | Visual | Primitivas URP, paleta de puerto (grúa roja/blanca) | Rápido y liviano para WebGL |
+| 2026-10-22 | Física | 50 Hz; subir solverIterations antes que el timestep | Lo más barato en WebGL |
+| 2026-10-22 | Masas | Escaladas: 2000/1000/500/200/200/500 kg; contenedor 800, caja 150 | Masas parecidas entre vecinos, estable |
+| 2026-10-22 | Tests | Sin tests automáticos; checklist manual | Entrega al día siguiente |
+| 2026-10-22 | Escena | Generada por script de editor (`Supercrane → Build Scene`) | Reproducible; evita editar YAML y conflictos con el editor |
+| 2026-10-22 | Código | Un asmdef de runtime y uno de Editor | Prolijo sin complicar |
+| 2026-10-22 | Recortes | Primero idioma y config avanzada | Lo obligatorio va primero |
+| 2026-10-22 | Conteo | Cuenta si está en la zona, suelta y quieta 1 s | Evita contar cargas en tránsito |
+| 2026-10-22 | Cargas | 4 contenedores + 4 cajas | Demuestra la tarea sin cargar WebGL |
+| 2026-10-22 | Recorridos | Pórtico ±15 m, carro 2-20 m, izaje 0-12 m | Alcanza 2-3 bahías del barco |
+| 2026-10-22 | Enganche | FixedJoint en runtime con Espacio; cerca + alineado ±15° | No suma Articulation Bodies; da sentido al giro del spreader |
+| 2026-10-22 | Idioma | ES/EN con tabla propia (ScriptableObject) | Sin paquete Localization, liviano |
+| 2026-10-22 | Config | Persistente con PlayerPrefs | Se guarda en el navegador en WebGL |
+| 2026-10-22 | Pausa | Tecla P (no Esc) con Reanudar/Config/Controles/Reiniciar | Esc sale de pantalla completa en WebGL |
+| 2026-10-22 | UI | uGUI; telemetría en tabla; contador de apiladas | Simple y conocido |
+| 2026-10-22 | Controles UI | Botones mantener-presionado, ocultables desde config | Cumple "entrada por UI" |
+| 2026-10-22 | Teclado | A/D pórtico, W/S carro, R/F izaje, Q/E spreader, Espacio, C, P | Esquema WASD conocido |
+| 2026-10-22 | Cámaras | Cabina colgada del carro + externa orbital | Fiel a una STS; buena vista del apilado |
+| 2026-10-22 | Escena | Muelle + barco estático | Tarea clara: descargar el barco |
+| 2026-10-22 | Accesorio | Spreader (Revolute Y ±180°) en vez de gancho | Fiel a una STS |
+| 2026-10-22 | Control | Target incremental en FixedUpdate | Estable y encaja con target vs real |
+| 2026-10-22 | Tipo de grúa | **Grúa pórtico STS**, no grúa torre | Aclaración de Mateo: el proyecto es un pórtico |
+| 2026-10-22 | Árbol de joints | Base → Pórtico (P) → Carro (P) → Izaje (P) → Cable ×2 (S) → Spreader (R) | 7 cuerpos, 3 tipos, 4 drives, 2 pasivos |
 | 2026-10-22 | Plataforma | WebGL en itch.io, compresión Gzip | Brotli suele fallar en itch.io |
 | 2026-10-22 | Repo | Rama única `main`, commits por tarea | Proyecto individual con entrega corta |

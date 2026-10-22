@@ -1,10 +1,10 @@
 # SupercraneSimulator
 
-Simulador de grúa torre hecho en Unity 6.3 con **Articulation Bodies**.
-Trabajo práctico de Simuladores (UAI, 2.º año).
+Simulador de grúa pórtico portuaria (STS) hecho en Unity 6.3 con
+**Articulation Bodies**. Trabajo práctico de Simuladores (UAI, 2.º año).
 
-El objetivo es manejar la grúa para tomar cajas y contenedores con el gancho
-y apilarlos dentro de una zona marcada.
+El objetivo es descargar cajas y contenedores de un barco con el spreader y
+apilarlos dentro de una zona marcada del muelle.
 
 - **Jugar:** _(link de itch.io pendiente)_
 - **Motor:** Unity 6000.3.14f1 (6.3 LTS), URP
@@ -12,7 +12,18 @@ y apilarlos dentro de una zona marcada.
 
 ## Controles
 
-_(Pendiente: se definen en [DESIGN.md](DESIGN.md#controles).)_
+| Acción | Tecla |
+|---|---|
+| Mover el pórtico sobre los rieles | A / D |
+| Mover el carro (muelle ↔ barco) | W / S |
+| Subir / bajar el spreader | R / F |
+| Girar el spreader | Q / E |
+| Enganchar / soltar | Espacio |
+| Cambiar cámara | C |
+| Pausa y configuración | P |
+| Orbitar / zoom (cámara externa) | Clic derecho + mouse / rueda |
+
+También hay botones en pantalla, que se pueden ocultar desde Configuración.
 
 ## Documentación
 
