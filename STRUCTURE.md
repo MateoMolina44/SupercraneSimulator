@@ -23,7 +23,8 @@ Assets/
 │  │  └─ SceneBuilder/ Menú "Supercrane → Build Scene"
 │  ├─ Data/            ScriptableObjects (tabla de idioma)
 │  ├─ Prefabs/         Crane, Container20, Crate, StackZone, Ship
-│  ├─ Materials/       Paleta de puerto (URP Lit)
+│  ├─ Models/Generated Mallas con el tamaño aplicado (las crea el builder)
+│  ├─ Materials/       Paleta de puerto (URP Lit, los crea el builder)
 │  └─ Physics/         PhysicsMaterials
 ├─ Settings/           Assets de URP (de la plantilla)
 └─ InputSystem_Actions.inputactions
@@ -55,6 +56,9 @@ Main
 ├─ --- Crane ---
 │  └─ Base → Gantry → Trolley → Hoist → CableUpper → CableLower → Spreader
 │     (CabinCamera es hija de Trolley)
+├─ --- Systems ---
+│  ├─ CraneInput
+│  └─ CraneController
 ├─ --- Loads ---
 │  ├─ Container_01 … _04
 │  └─ Crate_01 … _04
@@ -68,26 +72,35 @@ Main
 
 Los objetos `--- X ---` son separadores vacíos, sin componentes.
 
-## Scripts previstos
+Las mallas no se escalan con el transform: `BuilderAssets` genera una malla
+con el tamaño final y la guarda en `Models/Generated/`. Así toda la jerarquía
+queda con escala (1,1,1).
+
+## Scripts
+
+✅ = ya existe.
 
 | Script | Carpeta | Responsabilidad |
 |---|---|---|
-| `DrivenJoint` | Crane | Envuelve un ArticulationBody con drive: rango, velocidad, target, valor real y unidad |
-| `CraneController` | Crane | Aplica los ejes de entrada a cada `DrivenJoint` en `FixedUpdate` |
-| `CraneInput` | Input | Lee Input System y combina con los botones de UI |
+| ✅ `DrivenJoint` | Crane | Envuelve un ArticulationBody con drive: rango, rampa, target, valor real, unidad y offset |
+| ✅ `CraneController` | Crane | Lee los ejes en `Update` y los aplica a cada `DrivenJoint` en `FixedUpdate` |
+| ✅ `RopeLine` | Crane | Dibuja los cables del carro al izaje con un LineRenderer |
+| ✅ `CraneAxis` | Input | Enum de los 4 ejes |
+| ✅ `CraneInput` | Input | Acciones del Input System creadas en código, combinadas con los botones de UI |
 | `HoldButton` | Input | Botón de UI que informa si está presionado |
-| `CameraSwitcher` | Cameras | Alterna cabina/externa con C y con botón |
+| ✅ `CameraSwitcher` | Cameras | Alterna cabina/externa con C y con botón |
 | `OrbitCamera` | Cameras | Órbita con clic derecho y zoom con rueda |
 | `Load` | Gameplay | Marca una carga (contenedor o caja) y su estado |
 | `SpreaderGrabber` | Gameplay | Detecta carga válida, crea y destruye el FixedJoint |
 | `StackZone` | Gameplay | Cuenta cargas sueltas y quietas dentro de la zona |
-| `JointTelemetryView` | UI | Tabla de target y valor real por joint |
+| ✅ `JointTelemetryView` | UI | Tabla de target y valor real por joint |
 | `StackCounterView` | UI | Muestra `Apiladas: N / total` |
 | `PauseMenu` | UI | Pausa con P, paneles de configuración y controles |
 | `SettingsView` | UI | Toggles y sliders de configuración |
 | `GameSettings` | Settings | Valores de config, carga y guarda con PlayerPrefs, avisa cambios |
 | `LocalizationTable` | Localization | ScriptableObject clave → ES/EN |
 | `LocalizedText` | Localization | Actualiza un texto al cambiar el idioma |
-| `SceneBuilder` | Editor | Genera la escena completa con valores de DESIGN.md |
+| ✅ `SceneBuilder` | Editor | Genera la escena completa con valores de DESIGN.md |
+| ✅ `BuilderAssets` | Editor | Mallas con tamaño aplicado y materiales URP |
 
 Esta tabla se actualiza cuando aparece o desaparece un script.

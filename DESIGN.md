@@ -76,10 +76,30 @@ Cargas (Rigidbody comunes): contenedor 800 kg, caja 150 kg.
 
 ### Física
 
-- Timestep 0,02 s (50 Hz). Si hay temblor, subir primero `solverIterations`
-  en los cuerpos, después ajustar damping de los drives.
-- Drives en modo Force con stiffness alto y damping moderado; valores
-  iniciales a ajustar probando.
+- Timestep 0,02 s (50 Hz). `solverIterations` 16 y `solverVelocityIterations`
+  4 en todos los cuerpos.
+- Drives en modo **Acceleration**: no dependen de la masa que cuelga, así que
+  sirven igual con o sin carga.
+
+| Joint | Stiffness | Damping | Velocidad | Posición inicial |
+|---|---|---|---|---|
+| Pórtico | 200 | 30 | 3 m/s | 0 m |
+| Carro | 200 | 30 | 3 m/s | 6 m |
+| Izaje | 400 | 40 | 2 m/s | 3 m |
+| Spreader | 400 | 40 | 45 °/s | 0° |
+| Cables (pasivos) | 0 | 0,5 | – | – |
+
+- **Ningún joint arranca en un límite.** Si un Prismatic se arma justo en su
+  tope, PhysX lo empuja hacia adentro en el primer paso y el cable sale
+  disparado. Cada cuerpo se arma en su posición inicial (jointPosition = 0) y
+  `DrivenJoint` suma un offset para mostrar la medida real.
+- El límite físico del spreader es ±185° para que el target (±180°) nunca
+  quede sobre el tope.
+- La inercia de los eslabones de cable está inflada a (150, 800, 150) kg·m².
+  Con la real (Iyy ≈ 3 contra ≈ 1800 del spreader) el solver no transmite el
+  torque y el spreader gira flojo y oscila.
+- El target llega a la velocidad máxima con una rampa de 0,8 s, para no darle
+  latigazos al cable.
 
 ### Unidades (verificar en Unity 6.3)
 
@@ -93,8 +113,9 @@ Modo **target incremental**:
 
 1. `Update`: se lee la entrada (teclado o botones de UI) y se guarda un eje
    −1/0/+1 por joint.
-2. `FixedUpdate`: `target += eje × velocidad × fixedDeltaTime`, se limita al
-   rango del joint y se escribe en el drive.
+2. `FixedUpdate`: la velocidad del target se acerca a `eje × velocidad` con
+   una rampa, `target += velocidad × fixedDeltaTime`, se limita al rango del
+   joint y se escribe en el drive.
 3. Se lee `jointPosition` y se publica para la UI.
 
 Al soltar la tecla, el target queda fijo y el joint se detiene ahí.

@@ -4,6 +4,12 @@ Registro corto de decisiones de diseño y técnicas. La más nueva va arriba.
 
 | Fecha | Tema | Decisión | Motivo |
 |---|---|---|---|
+| 2026-10-22 | Inercia del cable | Eslabones con inercia (150, 800, 150) | Con la real el spreader gira flojo y oscila (relación 600:1) |
+| 2026-10-22 | Arranque de joints | Ningún joint arranca en su límite; offset en DrivenJoint | En el límite PhysX da un impulso enorme en el primer paso |
+| 2026-10-22 | Drives | Modo Acceleration, con rampa de 0,8 s en el target | Independiente de la carga; menos latigazo en el cable |
+| 2026-10-22 | Input | Acciones creadas en código en CraneInput, sin tocar el .inputactions | Más simple y sin código generado |
+| 2026-10-22 | Escala | Mallas generadas con el tamaño final, todo transform en (1,1,1) | Cumple la consigna al pie de la letra |
+| 2026-10-22 | Herramientas | MCP for Unity (OpenUPM) para que Claude maneje el editor | Probar en Play y leer la consola sin pasos manuales |
 | 2026-10-22 | Itch.io | Mateo crea la página; Claude prepara el build y los pasos | Claude no crea cuentas ni páginas |
 | 2026-10-22 | Visual | Primitivas URP, paleta de puerto (grúa roja/blanca) | Rápido y liviano para WebGL |
 | 2026-10-22 | Física | 50 Hz; subir solverIterations antes que el timestep | Lo más barato en WebGL |

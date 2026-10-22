@@ -10,22 +10,23 @@ Orden de recortes en [DESIGN.md](DESIGN.md#11-recortes-si-falta-tiempo).
 
 - [x] Proyecto Unity 6.3 + URP + Input System
 - [x] Documentación y decisiones de diseño
-- [ ] Carpetas `Assets/_Project/` y assemblies
-- [ ] Plataforma Web configurada (Gzip, sin fallback)
+- [x] Carpetas `Assets/_Project/` y assemblies
+- [x] Plataforma Web configurada (Gzip, sin fallback)
+- [ ] Instalar el módulo **Web Build Support** en Unity Hub (Mateo)
 - [ ] Página de itch.io creada (Mateo)
 - [ ] **Build WebGL vacía subida a itch.io**
 
 ## Hito 1 — Grúa física (jueves)
 
-- [ ] `SceneBuilder`: muelle, agua, rieles y árbol de 7 Articulation Bodies
-- [ ] Escala (1,1,1), anclas en pivotes, masas y límites de DESIGN.md
-- [ ] Probar en Play: la grúa se queda quieta, sin temblores
+- [x] `SceneBuilder`: muelle, agua, rieles y árbol de 7 Articulation Bodies
+- [x] Escala (1,1,1), anclas en pivotes, masas y límites de DESIGN.md
+- [x] Probar en Play: la grúa se queda quieta, sin temblores
 
 ## Hito 2 — Control (jueves)
 
-- [ ] `DrivenJoint` + `CraneController` (targets en `FixedUpdate`)
-- [ ] Acciones del Input System (WASD, QE, RF, Espacio, C, P)
-- [ ] Telemetría: target y valor real por joint
+- [x] `DrivenJoint` + `CraneController` (targets en `FixedUpdate`)
+- [x] Acciones del Input System (WASD, QE, RF, Espacio, C, P)
+- [x] Telemetría: target y valor real por joint
 - [ ] Build WebGL de control
 
 ## Hito 3 — Tarea (viernes temprano)
@@ -36,8 +37,9 @@ Orden de recortes en [DESIGN.md](DESIGN.md#11-recortes-si-falta-tiempo).
 
 ## Hito 4 — Cámaras y UI (viernes)
 
-- [ ] Cámara de cabina en el carro y cámara orbital
-- [ ] Cambio con C y con botón
+- [x] Cámara de cabina en el carro
+- [ ] Cámara orbital
+- [x] Cambio con C y con botón
 - [ ] Controles en pantalla (botones mantener-presionado)
 - [ ] Pausa con P: reanudar, controles, reiniciar
 

@@ -32,8 +32,19 @@
 - Los cambios que Unity hace solo al abrir (assets de URP, ProjectSettings) se
   commitean aparte con `chore:`.
 
+## Escena
+
+- La escena `Main` se genera con **Supercrane → Build Scene**. Cualquier
+  cambio de la grúa o del entorno se hace en `SceneBuilder.cs` y se vuelve a
+  generar; no se edita la escena a mano.
+- Claude maneja el editor con **MCP for Unity** (paquete
+  `com.coplaydev.unity-mcp` de OpenUPM). El aviso "Missing Signature" del
+  Package Manager es esperable: el paquete no está firmado por Unity.
+
 ## Build WebGL
 
+0. Requiere el módulo **Web Build Support** (Unity Hub → Installs →
+   6000.3.14f1 → Add modules).
 1. **File → Build Profiles → Web**, cambiar plataforma.
 2. **Player Settings → Publishing Settings:**
    - Compression Format: **Gzip** (o Disabled). Brotli suele fallar en
