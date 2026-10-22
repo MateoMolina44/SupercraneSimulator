@@ -50,7 +50,9 @@ namespace SupercraneSimulator.UI
 
         private void ShowCount(int count, int total)
         {
-            _counterText.text = Strings.Format("hud.stacked", count, total);
+            _counterText.text = count >= total && total > 0
+                ? Strings.Format("hud.complete", count, total)
+                : Strings.Format("hud.stacked", count, total);
         }
 
         private void ShowState(GrabState state)

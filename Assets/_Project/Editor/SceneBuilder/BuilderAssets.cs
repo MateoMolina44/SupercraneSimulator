@@ -21,6 +21,19 @@ namespace SupercraneSimulator.Editor.SceneBuilder
             Meshes.Clear();
         }
 
+        /// <summary>
+        /// Borra las mallas generadas en corridas anteriores. Llamar con la escena vieja ya cerrada:
+        /// así no quedan en el repo mallas de tamaños que ya no se usan.
+        /// </summary>
+        public static void DeleteGeneratedMeshes()
+        {
+            Meshes.Clear();
+            if (AssetDatabase.IsValidFolder(MeshFolder))
+            {
+                AssetDatabase.DeleteAsset(MeshFolder);
+            }
+        }
+
         /// <summary>Caja de tamaño <paramref name="size"/> centrada en el origen.</summary>
         public static Mesh Box(Vector3 size) => Get(PrimitiveType.Cube, size, Vector3.one);
 
@@ -72,7 +85,9 @@ namespace SupercraneSimulator.Editor.SceneBuilder
             var material = Material(name, color, 0.95f);
             material.SetFloat("_Surface", 1f);
             material.SetFloat("_Blend", 0f);
-            material.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            // URP 17 valida el material y pone One en modo Alpha; se usa el mismo valor para que
+            // regenerar la escena no deje el .mat modificado en git.
+            material.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.One);
             material.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
             material.SetFloat("_ZWrite", 0f);
             material.SetOverrideTag("RenderType", "Transparent");

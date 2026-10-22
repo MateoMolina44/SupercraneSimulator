@@ -76,6 +76,7 @@ namespace SupercraneSimulator.Editor.SceneBuilder
             _materials = new Materials();
 
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            BuilderAssets.DeleteGeneratedMeshes();
 
             var environment = Group("--- Environment ---");
             BuildEnvironment(environment);

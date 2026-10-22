@@ -26,9 +26,29 @@ namespace SupercraneSimulator.Gameplay
         /// </summary>
         public float AlignmentSymmetry => _kind == LoadKind.Container ? 180f : 90f;
 
+        [SerializeField, Tooltip("Si cae por debajo de esta altura (al agua), vuelve a su lugar en el barco")]
+        private float _respawnBelowY = -8f;
+
+        private Vector3 _startPosition;
+        private Quaternion _startRotation;
+
         private void Awake()
         {
             Body = GetComponent<Rigidbody>();
+            _startPosition = transform.position;
+            _startRotation = transform.rotation;
+        }
+
+        private void FixedUpdate()
+        {
+            // El agua no tiene collider: una carga que se suelta fuera del muelle o del barco se hunde.
+            if (!IsGrabbed && Body.position.y < _respawnBelowY)
+            {
+                Body.linearVelocity = Vector3.zero;
+                Body.angularVelocity = Vector3.zero;
+                Body.position = _startPosition;
+                Body.rotation = _startRotation;
+            }
         }
 
         public void Configure(LoadKind kind)

@@ -24,6 +24,7 @@ namespace SupercraneSimulator.Localization
             ["hud.camera.crane"] = ("Cámara: Grúa (C)", "Camera: Crane (C)"),
             ["hud.pause"] = ("Pausa (P)", "Pause (P)"),
             ["hud.stacked"] = ("Apiladas: {0} / {1}", "Stacked: {0} / {1}"),
+            ["hud.complete"] = ("<color=#77ff77>¡Barco descargado! {0} / {1}</color>", "<color=#77ff77>Ship unloaded! {0} / {1}</color>"),
             ["hud.spreader.empty"] = ("Spreader: <color=#ff8080>sin carga</color>", "Spreader: <color=#ff8080>empty</color>"),
             ["hud.spreader.ready"] = ("Spreader: <color=#ffcc33>carga lista</color> (Espacio engancha)", "Spreader: <color=#ffcc33>load ready</color> (Space grabs)"),
             ["hud.spreader.grabbed"] = ("Spreader: <color=#77ff77>enganchado</color> (Espacio suelta)", "Spreader: <color=#77ff77>grabbed</color> (Space releases)"),
