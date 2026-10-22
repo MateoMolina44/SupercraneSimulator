@@ -9,7 +9,7 @@ namespace SupercraneSimulator.Crane
     [RequireComponent(typeof(ArticulationBody))]
     public sealed class DrivenJoint : MonoBehaviour
     {
-        [SerializeField, Tooltip("Nombre que se muestra en la telemetría")]
+        [SerializeField, Tooltip("Clave de texto del nombre en la telemetría (ver Strings)")]
         private string _label = "Joint";
 
         [Header("Rango (m en Prismatic, grados en Revolute)")]

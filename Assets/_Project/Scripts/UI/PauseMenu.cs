@@ -14,6 +14,7 @@ namespace SupercraneSimulator.UI
         [SerializeField] private GameObject _root;
         [SerializeField] private GameObject _mainPanel;
         [SerializeField] private GameObject _controlsPanel;
+        [SerializeField] private GameObject _settingsPanel;
 
         public bool IsPaused { get; private set; }
 
@@ -44,14 +45,17 @@ namespace SupercraneSimulator.UI
 
         public void ShowControls()
         {
-            _mainPanel.SetActive(false);
-            _controlsPanel.SetActive(true);
+            Show(_controlsPanel);
+        }
+
+        public void ShowSettings()
+        {
+            Show(_settingsPanel);
         }
 
         public void ShowMain()
         {
-            _controlsPanel.SetActive(false);
-            _mainPanel.SetActive(true);
+            Show(_mainPanel);
         }
 
         public void Restart()
@@ -60,12 +64,20 @@ namespace SupercraneSimulator.UI
             SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
         }
 
-        public void Configure(CraneInput input, GameObject root, GameObject mainPanel, GameObject controlsPanel)
+        public void Configure(CraneInput input, GameObject root, GameObject mainPanel, GameObject controlsPanel, GameObject settingsPanel)
         {
             _input = input;
             _root = root;
             _mainPanel = mainPanel;
             _controlsPanel = controlsPanel;
+            _settingsPanel = settingsPanel;
+        }
+
+        private void Show(GameObject panel)
+        {
+            _mainPanel.SetActive(panel == _mainPanel);
+            _controlsPanel.SetActive(panel == _controlsPanel);
+            _settingsPanel.SetActive(panel == _settingsPanel);
         }
 
         private void SetPaused(bool paused)

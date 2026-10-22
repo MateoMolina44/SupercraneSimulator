@@ -1,5 +1,6 @@
 using System.Text;
 using SupercraneSimulator.Crane;
+using SupercraneSimulator.Localization;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -28,12 +29,13 @@ namespace SupercraneSimulator.UI
                 return;
             }
 
-            _labels.Clear().AppendLine("<b>Joint</b>");
-            _targets.Clear().AppendLine("<b>Target</b>");
-            _actuals.Clear().AppendLine("<b>Real</b>");
+            _labels.Clear().Append("<b>").Append(Strings.Get("telemetry.joint")).AppendLine("</b>");
+            _targets.Clear().Append("<b>").Append(Strings.Get("telemetry.target")).AppendLine("</b>");
+            _actuals.Clear().Append("<b>").Append(Strings.Get("telemetry.real")).AppendLine("</b>");
             foreach (var joint in joints)
             {
-                _labels.AppendLine(joint.Label);
+                // El label del joint es una clave de texto.
+                _labels.AppendLine(Strings.Get(joint.Label));
                 _targets.AppendLine(Format(joint.Target, joint.Unit));
                 _actuals.AppendLine(Format(joint.Actual, joint.Unit));
             }
@@ -53,7 +55,7 @@ namespace SupercraneSimulator.UI
 
         private static string Format(float value, string unit)
         {
-            return unit == "°" ? $"{value:0.0}{unit}" : $"{value:0.00} {unit}";
+            return unit == "°" ? Strings.Number(value, "0.0") + unit : Strings.Number(value, "0.00") + " " + unit;
         }
     }
 }

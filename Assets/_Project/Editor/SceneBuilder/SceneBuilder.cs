@@ -2,6 +2,8 @@ using SupercraneSimulator.Cameras;
 using SupercraneSimulator.Crane;
 using SupercraneSimulator.Gameplay;
 using SupercraneSimulator.Input;
+using SupercraneSimulator.Localization;
+using SupercraneSimulator.Settings;
 using SupercraneSimulator.UI;
 using UnityEditor;
 using UnityEditor.Events;
@@ -92,7 +94,8 @@ namespace SupercraneSimulator.Editor.SceneBuilder
 
             var cameras = Group("--- Cameras ---");
             var external = BuildExternalCamera(cameras);
-            external.gameObject.AddComponent<OrbitCamera>().Configure(crane.Gantry.transform, new Vector3(0f, 8f, 4f));
+            var orbitCamera = external.gameObject.AddComponent<OrbitCamera>();
+            orbitCamera.Configure(crane.Gantry.transform, new Vector3(0f, 8f, 4f));
             var switcher = new GameObject("CameraSwitcher").AddComponent<CameraSwitcher>();
             switcher.transform.SetParent(cameras, false);
             var loadsGroup = Group("--- Loads ---");
@@ -100,10 +103,11 @@ namespace SupercraneSimulator.Editor.SceneBuilder
             var zone = BuildStackZone(environment, loads);
 
             var ui = Group("--- UI ---");
-            var cameraLabel = BuildUi(ui, input, controller, switcher, zone, crane.Grabber);
+            var joints = new[] { crane.Gantry, crane.Trolley, crane.Hoist, crane.Spreader };
+            var cameraLabel = BuildUi(ui, input, controller, switcher, zone, crane.Grabber, joints, orbitCamera);
             switcher.Configure(input, cameraLabel,
                 new[] { external, crane.CabinCamera, crane.CraneCamera },
-                new[] { "Cámara: Externa (C)", "Cámara: Cabina (C)", "Cámara: Grúa (C)" });
+                new[] { "hud.camera.external", "hud.camera.cabin", "hud.camera.crane" });
 
             EditorSceneManager.SaveScene(scene, ScenePath);
             EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(ScenePath, true) };
@@ -180,12 +184,12 @@ namespace SupercraneSimulator.Editor.SceneBuilder
 
             // 2. Pórtico: Prismatic sobre los rieles (eje X del mundo).
             var gantry = Body("Gantry", baseBody.transform, new Vector3(GantryStart, 0f, 0f), GantryMass);
-            parts.Gantry = DrivenPrismatic(gantry, Quaternion.identity, "Pórtico", -15f, 15f, GantryStart, 1.5f, 2.5f, 200f, 30f);
+            parts.Gantry = DrivenPrismatic(gantry, Quaternion.identity, "joint.gantry", -15f, 15f, GantryStart, 1.5f, 2.5f, 200f, 30f);
             BuildGantryVisuals(gantry.transform);
 
             // 3. Carro: Prismatic a lo largo de la viga (eje Z).
             var trolley = Body("Trolley", gantry.transform, new Vector3(GantryStart, GirderTopY, TrolleyStart), TrolleyMass);
-            parts.Trolley = DrivenPrismatic(trolley, Quaternion.Euler(0f, -90f, 0f), "Carro", 2f, 20f, TrolleyStart, 2.5f, 2.5f, 200f, 30f);
+            parts.Trolley = DrivenPrismatic(trolley, Quaternion.Euler(0f, -90f, 0f), "joint.trolley", 2f, 20f, TrolleyStart, 2.5f, 2.5f, 200f, 30f);
             Box(trolley.transform, "TrolleyFrame", new Vector3(0f, 0.5f, 0f), new Vector3(4f, 1f, 3f), _materials.CraneRed, false);
             parts.CabinCamera = BuildCabin(trolley.transform, input);
             parts.CraneCamera = BuildCraneCamera(trolley.transform);
@@ -194,7 +198,7 @@ namespace SupercraneSimulator.Editor.SceneBuilder
             // 4. Izaje: Prismatic vertical hacia abajo. 0 m es el gancho arriba de todo.
             var hoistPosition = new Vector3(GantryStart, HoistTopY - HoistStart, TrolleyStart);
             var hoist = Body("Hoist", trolley.transform, hoistPosition, HoistMass);
-            parts.Hoist = DrivenPrismatic(hoist, Quaternion.Euler(0f, 0f, -90f), "Izaje", 0f, 12f, HoistStart, 1.5f, 1f, 400f, 40f);
+            parts.Hoist = DrivenPrismatic(hoist, Quaternion.Euler(0f, 0f, -90f), "joint.hoist", 0f, 12f, HoistStart, 1.5f, 1f, 400f, 40f);
             Box(hoist.transform, "HeadBlock", Vector3.zero, new Vector3(1.4f, 0.6f, 1.4f), _materials.Yellow, false);
             SetBoxInertia(hoist, new Vector3(1.4f, 0.6f, 1.4f), Vector3.zero);
             BuildRopes(trolley.transform, hoist.transform);
@@ -211,7 +215,7 @@ namespace SupercraneSimulator.Editor.SceneBuilder
             // El límite físico pasa apenas de ±180° para que el target nunca quede sobre el tope.
             spreader.xDrive = Drive(-185f, 185f, 0f, 400f, 40f);
             Box(spreader.transform, "SpreaderFrame", new Vector3(0f, -0.25f, 0f), new Vector3(6.1f, 0.5f, 2.5f), _materials.Yellow);
-            parts.Spreader = Driven(spreader, "Spreader", -180f, 180f, 0f, 0f, 30f, 0.6f);
+            parts.Spreader = Driven(spreader, "joint.spreader", -180f, 180f, 0f, 0f, 30f, 0.6f);
 
             // Luces de estado en las esquinas: rojo sin carga, amarillo carga lista, verde enganchado.
             var lights = new Renderer[4];
@@ -531,9 +535,9 @@ namespace SupercraneSimulator.Editor.SceneBuilder
             return camera;
         }
 
-        /// <summary>Arma el HUD y devuelve el texto del botón de cámara.</summary>
+        /// <summary>Arma el HUD, la configuración y la pausa. Devuelve el texto del botón de cámara.</summary>
         private static Text BuildUi(Transform parent, CraneInput input, CraneController controller, CameraSwitcher switcher,
-            StackZone zone, SpreaderGrabber grabber)
+            StackZone zone, SpreaderGrabber grabber, DrivenJoint[] joints, OrbitCamera orbitCamera)
         {
             var eventSystem = new GameObject("EventSystem", typeof(EventSystem), typeof(InputSystemUIInputModule));
             eventSystem.transform.SetParent(parent, false);
@@ -541,15 +545,15 @@ namespace SupercraneSimulator.Editor.SceneBuilder
             var canvas = Canvas(parent, "HUD", 0);
 
             // Telemetría: esquina superior izquierda.
-            var panel = Panel(canvas, "Telemetry", new Vector2(0f, 1f), new Vector2(16f, -16f), new Vector2(330f, 120f));
-            var labels = Label(panel, "Labels", new Vector2(10f, -8f), new Vector2(110f, 104f), TextAnchor.UpperLeft);
-            var targets = Label(panel, "Targets", new Vector2(120f, -8f), new Vector2(100f, 104f), TextAnchor.UpperRight);
-            var actuals = Label(panel, "Actuals", new Vector2(220f, -8f), new Vector2(100f, 104f), TextAnchor.UpperRight);
-            panel.gameObject.AddComponent<JointTelemetryView>().Configure(controller, labels, targets, actuals);
+            var telemetry = Panel(canvas, "Telemetry", new Vector2(0f, 1f), new Vector2(16f, -16f), new Vector2(330f, 120f));
+            var labels = Label(telemetry, "Labels", new Vector2(10f, -8f), new Vector2(110f, 104f), TextAnchor.UpperLeft);
+            var targets = Label(telemetry, "Targets", new Vector2(120f, -8f), new Vector2(100f, 104f), TextAnchor.UpperRight);
+            var actuals = Label(telemetry, "Actuals", new Vector2(220f, -8f), new Vector2(100f, 104f), TextAnchor.UpperRight);
+            telemetry.gameObject.AddComponent<JointTelemetryView>().Configure(controller, labels, targets, actuals);
 
-            // Botón de cámara: esquina superior derecha.
+            // Botón de cámara: esquina superior derecha (CameraSwitcher pone el texto).
             var (cameraButton, buttonLabel) = TextButton(canvas, "CameraButton", new Vector2(1f, 1f), new Vector2(-16f, -16f),
-                new Vector2(230f, 44f), "Cámara (C)");
+                new Vector2(230f, 44f), Strings.Get("hud.camera.external"));
             UnityEventTools.AddPersistentListener(cameraButton.onClick, switcher.Next);
 
             // Contador de apiladas y estado del spreader: arriba al centro.
@@ -560,11 +564,16 @@ namespace SupercraneSimulator.Editor.SceneBuilder
             spreaderState.fontSize = 15;
             counterPanel.gameObject.AddComponent<StackCounterView>().Configure(zone, grabber, counter, spreaderState);
 
-            BuildOnScreenControls(canvas, input);
+            var onScreenControls = BuildOnScreenControls(canvas, input);
 
-            var pauseMenu = BuildPauseMenu(parent, input);
-            var (pauseButton, _) = TextButton(canvas, "PauseButton", new Vector2(1f, 1f), new Vector2(-16f, -68f),
-                new Vector2(230f, 36f), "Pausa (P)", 15);
+            var settings = new GameObject("GameSettings").AddComponent<GameSettings>();
+            settings.transform.SetParent(parent, false);
+            settings.Configure(onScreenControls, telemetry.gameObject, joints, orbitCamera);
+
+            var pauseMenu = BuildPauseMenu(parent, input, settings);
+            var (pauseButton, pauseLabel) = TextButton(canvas, "PauseButton", new Vector2(1f, 1f), new Vector2(-16f, -68f),
+                new Vector2(230f, 36f), "", 15);
+            Localize(pauseLabel, "hud.pause");
             UnityEventTools.AddPersistentListener(pauseButton.onClick, pauseMenu.Toggle);
 
             return buttonLabel;
@@ -572,98 +581,252 @@ namespace SupercraneSimulator.Editor.SceneBuilder
 
         /// <summary>
         /// Botones en pantalla abajo al centro: dos por eje (actúan mientras se mantienen) y
-        /// el de enganchar. Funcionan con mouse y con touch.
+        /// el de enganchar. Funcionan con mouse y con touch. Devuelve el panel para poder ocultarlo.
         /// </summary>
-        private static void BuildOnScreenControls(Transform canvas, CraneInput input)
+        private static GameObject BuildOnScreenControls(Transform canvas, CraneInput input)
         {
             var panel = Panel(canvas, "OnScreenControls", new Vector2(0.5f, 0f), new Vector2(0f, 16f), new Vector2(960f, 100f));
             panel.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0.35f);
 
             var groups = new[]
             {
-                ("Pórtico", CraneAxis.Gantry, "◄  A", "D  ►"),
-                ("Carro", CraneAxis.Trolley, "S  Tierra", "W  Mar"),
-                ("Izaje", CraneAxis.Hoist, "R  Subir", "F  Bajar"),
-                ("Spreader", CraneAxis.Spreader, "Q  Izq.", "E  Der.")
+                ("joint.gantry", CraneAxis.Gantry, "ctrl.gantry"),
+                ("joint.trolley", CraneAxis.Trolley, "ctrl.trolley"),
+                ("joint.hoist", CraneAxis.Hoist, "ctrl.hoist"),
+                ("joint.spreader", CraneAxis.Spreader, "ctrl.spreader")
             };
             const float groupWidth = 190f;
             const float margin = 10f;
             var bottomLeft = Vector2.zero;
             for (var i = 0; i < groups.Length; i++)
             {
-                var (title, axis, negative, positive) = groups[i];
+                var (titleKey, axis, buttonKey) = groups[i];
                 var x = margin + i * groupWidth;
                 var titleLabel = Label(panel, $"{axis}Title", new Vector2(x, -6f), new Vector2(180f, 24f), TextAnchor.UpperLeft);
-                titleLabel.text = $"<b>{title}</b>";
                 titleLabel.fontSize = 15;
+                titleLabel.fontStyle = FontStyle.Bold;
+                Localize(titleLabel, titleKey);
 
-                var (negativeButton, _) = TextButton(panel, $"{axis}Negative", bottomLeft, new Vector2(x, margin), new Vector2(88f, 56f), negative, 15);
+                var (negativeButton, negativeLabel) = TextButton(panel, $"{axis}Negative", bottomLeft, new Vector2(x, margin), new Vector2(88f, 56f), "", 15);
+                Localize(negativeLabel, buttonKey + ".negative");
                 negativeButton.gameObject.AddComponent<HoldButton>().Configure(input, axis, -1f);
-                var (positiveButton, _) = TextButton(panel, $"{axis}Positive", bottomLeft, new Vector2(x + 92f, margin), new Vector2(88f, 56f), positive, 15);
+                var (positiveButton, positiveLabel) = TextButton(panel, $"{axis}Positive", bottomLeft, new Vector2(x + 92f, margin), new Vector2(88f, 56f), "", 15);
+                Localize(positiveLabel, buttonKey + ".positive");
                 positiveButton.gameObject.AddComponent<HoldButton>().Configure(input, axis, 1f);
             }
 
-            var (grabButton, _) = TextButton(panel, "GrabButton", bottomLeft, new Vector2(margin + groups.Length * groupWidth, margin),
-                new Vector2(180f, 80f), "<b>Espacio</b>\nEnganchar / soltar", 15);
+            var (grabButton, grabLabel) = TextButton(panel, "GrabButton", bottomLeft, new Vector2(margin + groups.Length * groupWidth, margin),
+                new Vector2(180f, 80f), "", 15);
+            Localize(grabLabel, "ctrl.grab");
             UnityEventTools.AddPersistentListener(grabButton.onClick, input.RequestGrab);
+            return panel.gameObject;
         }
 
         /// <summary>Menú de pausa en su propio canvas, por encima del HUD.</summary>
-        private static PauseMenu BuildPauseMenu(Transform parent, CraneInput input)
+        private static PauseMenu BuildPauseMenu(Transform parent, CraneInput input, GameSettings settings)
         {
             var canvas = Canvas(parent, "PauseCanvas", 10);
 
             var overlay = new GameObject("Overlay", typeof(RectTransform), typeof(Image));
             overlay.transform.SetParent(canvas, false);
-            var overlayRect = (RectTransform)overlay.transform;
-            overlayRect.anchorMin = Vector2.zero;
-            overlayRect.anchorMax = Vector2.one;
-            overlayRect.offsetMin = Vector2.zero;
-            overlayRect.offsetMax = Vector2.zero;
+            Stretch((RectTransform)overlay.transform, Vector2.zero, Vector2.one);
             overlay.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0.65f);
 
-            var center = new Vector2(0.5f, 0.5f);
-            var main = Panel(overlay.transform, "MainPanel", center, Vector2.zero, new Vector2(360f, 320f));
-            main.GetComponent<Image>().color = new Color(0.1f, 0.12f, 0.14f, 0.95f);
-            var title = Label(main, "Title", new Vector2(0f, 110f), new Vector2(340f, 44f), TextAnchor.MiddleCenter);
-            title.text = "<b>Pausa</b>";
+            var main = MenuPanel(overlay.transform, "MainPanel", new Vector2(360f, 380f));
+            var title = Label(main, "Title", new Vector2(0f, 140f), new Vector2(340f, 44f), TextAnchor.MiddleCenter);
             title.fontSize = 30;
-            var (resume, _) = TextButton(main, "Resume", center, new Vector2(0f, 45f), new Vector2(260f, 48f), "Reanudar", 19);
-            var (controls, _) = TextButton(main, "Controls", center, new Vector2(0f, -15f), new Vector2(260f, 48f), "Controles", 19);
-            var (restart, _) = TextButton(main, "Restart", center, new Vector2(0f, -75f), new Vector2(260f, 48f), "Reiniciar", 19);
-            var hint = Label(main, "Hint", new Vector2(0f, -132f), new Vector2(340f, 24f), TextAnchor.MiddleCenter);
-            hint.text = "P para volver al juego";
+            Localize(title, "pause.title");
+            var resume = MenuButton(main, "Resume", new Vector2(0f, 75f), "pause.resume");
+            var controls = MenuButton(main, "Controls", new Vector2(0f, 17f), "pause.controls");
+            var settingsButton = MenuButton(main, "Settings", new Vector2(0f, -41f), "pause.settings");
+            var restart = MenuButton(main, "Restart", new Vector2(0f, -99f), "pause.restart");
+            var hint = Label(main, "Hint", new Vector2(0f, -160f), new Vector2(340f, 24f), TextAnchor.MiddleCenter);
             hint.fontSize = 13;
             hint.color = new Color(1f, 1f, 1f, 0.6f);
+            Localize(hint, "pause.hint");
 
-            var controlsPanel = Panel(overlay.transform, "ControlsPanel", center, Vector2.zero, new Vector2(560f, 460f));
-            controlsPanel.GetComponent<Image>().color = new Color(0.1f, 0.12f, 0.14f, 0.95f);
+            var controlsPanel = MenuPanel(overlay.transform, "ControlsPanel", new Vector2(560f, 460f));
             var controlsText = Label(controlsPanel, "Text", new Vector2(28f, -20f), new Vector2(504f, 360f), TextAnchor.UpperLeft);
             controlsText.fontSize = 17;
             controlsText.lineSpacing = 1.25f;
-            controlsText.text =
-                "<b>Controles</b>\n\n" +
-                "<b>A / D</b>    Mover el pórtico sobre los rieles\n" +
-                "<b>W / S</b>    Mover el carro hacia el mar / hacia tierra\n" +
-                "<b>R / F</b>    Subir / bajar el spreader\n" +
-                "<b>Q / E</b>    Girar el spreader\n" +
-                "<b>Espacio</b>  Enganchar / soltar (luz amarilla = carga lista)\n" +
-                "<b>C</b>          Cambiar de cámara\n" +
-                "<b>P</b>          Pausa\n\n" +
-                "<b>Cámara externa:</b> clic derecho y arrastrar para orbitar,\nrueda para acercar o alejar.\n\n" +
-                "Objetivo: llevar las 8 cargas del barco a la zona amarilla.";
-            var (back, _) = TextButton(controlsPanel, "Back", new Vector2(0.5f, 0f), new Vector2(0f, 20f), new Vector2(200f, 44f), "Volver", 18);
+            Localize(controlsText, "pause.controls.text");
+            var controlsBack = BackButton(controlsPanel, new Vector2(0f, 20f));
+
+            var settingsPanel = BuildSettingsPanel(overlay.transform, settings, out var settingsBack);
 
             var pauseMenu = canvas.gameObject.AddComponent<PauseMenu>();
-            pauseMenu.Configure(input, overlay, main.gameObject, controlsPanel.gameObject);
+            pauseMenu.Configure(input, overlay, main.gameObject, controlsPanel.gameObject, settingsPanel);
             UnityEventTools.AddPersistentListener(resume.onClick, pauseMenu.Resume);
             UnityEventTools.AddPersistentListener(controls.onClick, pauseMenu.ShowControls);
+            UnityEventTools.AddPersistentListener(settingsButton.onClick, pauseMenu.ShowSettings);
             UnityEventTools.AddPersistentListener(restart.onClick, pauseMenu.Restart);
-            UnityEventTools.AddPersistentListener(back.onClick, pauseMenu.ShowMain);
+            UnityEventTools.AddPersistentListener(controlsBack.onClick, pauseMenu.ShowMain);
+            UnityEventTools.AddPersistentListener(settingsBack.onClick, pauseMenu.ShowMain);
 
             controlsPanel.gameObject.SetActive(false);
+            settingsPanel.SetActive(false);
             overlay.SetActive(false);
             return pauseMenu;
+        }
+
+        /// <summary>
+        /// Panel de configuración: dos toggles, cinco sliders (velocidades y sensibilidad), idioma,
+        /// restablecer y volver. Las filas se ubican desde la esquina superior izquierda.
+        /// </summary>
+        private static GameObject BuildSettingsPanel(Transform overlay, GameSettings settings, out Button back)
+        {
+            var panel = MenuPanel(overlay, "SettingsPanel", new Vector2(560f, 520f));
+            var title = Label(panel, "Title", new Vector2(0f, 222f), new Vector2(520f, 40f), TextAnchor.MiddleCenter);
+            title.fontSize = 26;
+            Localize(title, "settings.title");
+
+            const float labelX = 30f;
+            const float controlX = 300f;
+            const float valueX = 490f;
+            const float rowHeight = 30f;
+            var y = -70f;
+
+            Toggle ToggleRow(string key)
+            {
+                Localize(Label(panel, key, new Vector2(labelX, y), new Vector2(260f, rowHeight), TextAnchor.MiddleLeft), key);
+                var toggle = ToggleControl(panel, key + ".toggle", new Vector2(controlX, y - 1f));
+                y -= 42f;
+                return toggle;
+            }
+
+            Slider SliderRow(string key, out Text value)
+            {
+                Localize(Label(panel, key, new Vector2(labelX, y), new Vector2(260f, rowHeight), TextAnchor.MiddleLeft), key);
+                var slider = SliderControl(panel, key + ".slider", new Vector2(controlX, y - 5f), new Vector2(180f, 20f));
+                value = Label(panel, key + ".value", new Vector2(valueX, y), new Vector2(60f, rowHeight), TextAnchor.MiddleRight);
+                y -= 42f;
+                return slider;
+            }
+
+            var controlsToggle = ToggleRow("settings.controls");
+            var telemetryToggle = ToggleRow("settings.telemetry");
+            y -= 10f;
+            var speedKeys = new[] { "settings.speed.gantry", "settings.speed.trolley", "settings.speed.hoist", "settings.speed.spreader" };
+            var speedSliders = new Slider[speedKeys.Length];
+            var speedValues = new Text[speedKeys.Length];
+            for (var i = 0; i < speedKeys.Length; i++)
+            {
+                speedSliders[i] = SliderRow(speedKeys[i], out speedValues[i]);
+            }
+
+            y -= 10f;
+            var sensitivitySlider = SliderRow("settings.sensitivity", out var sensitivityValue);
+
+            y -= 10f;
+            Localize(Label(panel, "settings.language", new Vector2(labelX, y), new Vector2(260f, rowHeight), TextAnchor.MiddleLeft), "settings.language");
+            var topLeft = new Vector2(0f, 1f);
+            var (spanish, _) = TextButton(panel, "Spanish", topLeft, new Vector2(controlX, y), new Vector2(110f, 32f), "Español", 15);
+            var (english, _) = TextButton(panel, "English", topLeft, new Vector2(controlX + 116f, y), new Vector2(110f, 32f), "English", 15);
+
+            var (defaults, defaultsLabel) = TextButton(panel, "Defaults", new Vector2(0.5f, 0f), new Vector2(-110f, 20f), new Vector2(200f, 44f), "", 18);
+            Localize(defaultsLabel, "settings.defaults");
+            back = BackButton(panel, new Vector2(110f, 20f));
+
+            panel.gameObject.AddComponent<SettingsView>().Configure(settings, controlsToggle, telemetryToggle, speedSliders, speedValues,
+                sensitivitySlider, sensitivityValue, spanish, english, defaults);
+            return panel.gameObject;
+        }
+
+        private static RectTransform MenuPanel(Transform parent, string name, Vector2 size)
+        {
+            var panel = Panel(parent, name, new Vector2(0.5f, 0.5f), Vector2.zero, size);
+            panel.GetComponent<Image>().color = new Color(0.1f, 0.12f, 0.14f, 0.95f);
+            return panel;
+        }
+
+        private static Button MenuButton(Transform parent, string name, Vector2 position, string key)
+        {
+            var (button, label) = TextButton(parent, name, new Vector2(0.5f, 0.5f), position, new Vector2(260f, 48f), "", 19);
+            Localize(label, key);
+            return button;
+        }
+
+        private static Button BackButton(Transform parent, Vector2 position)
+        {
+            var (button, label) = TextButton(parent, "Back", new Vector2(0.5f, 0f), position, new Vector2(200f, 44f), "", 18);
+            Localize(label, "pause.back");
+            return button;
+        }
+
+        private static Toggle ToggleControl(Transform parent, string name, Vector2 position)
+        {
+            var box = Panel(parent, name, new Vector2(0f, 1f), position, new Vector2(30f, 30f));
+            var background = box.GetComponent<Image>();
+            background.color = new Color(0.22f, 0.25f, 0.3f, 1f);
+            var check = new GameObject("Checkmark", typeof(RectTransform), typeof(Image));
+            check.transform.SetParent(box, false);
+            Stretch((RectTransform)check.transform, Vector2.zero, Vector2.one, 6f);
+            var checkImage = check.GetComponent<Image>();
+            checkImage.color = new Color(0.3f, 0.8f, 0.4f, 1f);
+
+            var toggle = box.gameObject.AddComponent<Toggle>();
+            toggle.targetGraphic = background;
+            toggle.graphic = checkImage;
+            toggle.isOn = true;
+            return toggle;
+        }
+
+        private static Slider SliderControl(Transform parent, string name, Vector2 position, Vector2 size)
+        {
+            var root = new GameObject(name, typeof(RectTransform));
+            root.transform.SetParent(parent, false);
+            var rect = (RectTransform)root.transform;
+            rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0f, 1f);
+            rect.anchoredPosition = position;
+            rect.sizeDelta = size;
+
+            var background = new GameObject("Background", typeof(RectTransform), typeof(Image));
+            background.transform.SetParent(rect, false);
+            Stretch((RectTransform)background.transform, new Vector2(0f, 0.3f), new Vector2(1f, 0.7f));
+            background.GetComponent<Image>().color = new Color(0.22f, 0.25f, 0.3f, 1f);
+
+            var fillArea = new GameObject("Fill Area", typeof(RectTransform));
+            fillArea.transform.SetParent(rect, false);
+            Stretch((RectTransform)fillArea.transform, new Vector2(0f, 0.3f), new Vector2(1f, 0.7f));
+            var fill = new GameObject("Fill", typeof(RectTransform), typeof(Image));
+            fill.transform.SetParent(fillArea.transform, false);
+            Stretch((RectTransform)fill.transform, Vector2.zero, Vector2.one);
+            fill.GetComponent<Image>().color = new Color(0.2f, 0.45f, 0.75f, 1f);
+
+            var handleArea = new GameObject("Handle Slide Area", typeof(RectTransform));
+            handleArea.transform.SetParent(rect, false);
+            Stretch((RectTransform)handleArea.transform, Vector2.zero, Vector2.one);
+            var handle = new GameObject("Handle", typeof(RectTransform), typeof(Image));
+            handle.transform.SetParent(handleArea.transform, false);
+            ((RectTransform)handle.transform).sizeDelta = new Vector2(14f, 0f);
+            var handleImage = handle.GetComponent<Image>();
+            handleImage.color = Color.white;
+
+            var slider = root.AddComponent<Slider>();
+            slider.fillRect = (RectTransform)fill.transform;
+            slider.handleRect = (RectTransform)handle.transform;
+            slider.targetGraphic = handleImage;
+            slider.direction = Slider.Direction.LeftToRight;
+            slider.minValue = 0.5f;
+            slider.maxValue = 2f;
+            slider.value = 1f;
+            return slider;
+        }
+
+        private static void Stretch(RectTransform rect, Vector2 anchorMin, Vector2 anchorMax, float inset = 0f)
+        {
+            rect.anchorMin = anchorMin;
+            rect.anchorMax = anchorMax;
+            rect.offsetMin = new Vector2(inset, inset);
+            rect.offsetMax = new Vector2(-inset, -inset);
+        }
+
+        /// <summary>Pone el texto de la clave y agrega LocalizedText para que cambie con el idioma.</summary>
+        private static Text Localize(Text text, string key)
+        {
+            text.text = Strings.Get(key);
+            text.gameObject.AddComponent<LocalizedText>().Configure(key);
+            return text;
         }
 
         private static Transform Canvas(Transform parent, string name, int sortingOrder)

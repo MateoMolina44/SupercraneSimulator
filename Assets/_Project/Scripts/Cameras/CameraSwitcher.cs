@@ -1,4 +1,5 @@
 using SupercraneSimulator.Input;
+using SupercraneSimulator.Localization;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -11,7 +12,7 @@ namespace SupercraneSimulator.Cameras
     {
         [SerializeField] private CraneInput _input;
         [SerializeField] private Camera[] _cameras;
-        [SerializeField] private string[] _names;
+        [SerializeField, Tooltip("Claves de texto (ver Strings)")] private string[] _names;
         [SerializeField, Tooltip("Opcional: muestra el nombre de la cámara activa")]
         private Text _label;
         [SerializeField, Min(0)] private int _startIndex;
@@ -28,11 +29,13 @@ namespace SupercraneSimulator.Cameras
         private void OnEnable()
         {
             _input.CameraPressed += Next;
+            Strings.Changed += RefreshLabel;
         }
 
         private void OnDisable()
         {
             _input.CameraPressed -= Next;
+            Strings.Changed -= RefreshLabel;
         }
 
         public void Next()
@@ -63,9 +66,14 @@ namespace SupercraneSimulator.Cameras
                 }
             }
 
+            RefreshLabel();
+        }
+
+        private void RefreshLabel()
+        {
             if (_label != null && _names != null && _index < _names.Length)
             {
-                _label.text = _names[_index];
+                _label.text = Strings.Get(_names[_index]);
             }
         }
     }
