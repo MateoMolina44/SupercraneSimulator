@@ -12,9 +12,10 @@ Orden de recortes en [DESIGN.md](DESIGN.md#11-recortes-si-falta-tiempo).
 - [x] Documentación y decisiones de diseño
 - [x] Carpetas `Assets/_Project/` y assemblies
 - [x] Plataforma Web configurada (Gzip, sin fallback)
-- [ ] Instalar el módulo **Web Build Support** en Unity Hub (Mateo)
+- [x] Instalar el módulo **Web Build Support** en Unity Hub (Mateo)
+- [x] Primer build Web (`Build/SupercraneSimulator-Web.zip`)
 - [ ] Página de itch.io creada (Mateo)
-- [ ] **Build WebGL vacía subida a itch.io**
+- [ ] **Subir el build a itch.io y probarlo** (Mateo)
 
 ## Hito 1 — Grúa física (jueves)
 

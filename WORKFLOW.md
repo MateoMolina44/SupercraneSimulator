@@ -50,9 +50,24 @@
    - Compression Format: **Gzip** (o Disabled). Brotli suele fallar en
      itch.io.
    - Decompression Fallback: **desactivado**.
-3. Build en `Build/Web/` (ignorado por git).
-4. Comprimir el **contenido** de `Build/Web/` en un `.zip` (con `index.html`
-   en la raíz del zip).
+3. Build en `Build/Web/` (ignorado por git). Tarda ~9 minutos.
+4. Empaquetar con el script del repo:
+
+   ```bash
+   python Tools/package_web.py Build/Web Build/SupercraneSimulator-Web.zip
+   ```
+
+   Deja `index.html` en la raíz y las rutas con `/`. **No usar
+   `Compress-Archive` de PowerShell 5.1**: guarda las rutas con `\` y en
+   itch.io (Linux) las carpetas se rompen.
+
+> Probarlo local no es confiable en esta máquina: algo intercepta el tráfico
+> (el mismo problema que obliga a usar `schannel` con git) y corta la
+> descarga del `.wasm`. La prueba real es en itch.io.
+
+Si después de cambiar de plataforma el build falla con `Build target 'WebGL'
+not supported`, es porque el módulo se instaló con Unity abierto: reiniciar
+Unity.
 
 ## Publicación en itch.io
 
