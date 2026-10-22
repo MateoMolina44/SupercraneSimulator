@@ -47,10 +47,10 @@ Orden de recortes en [DESIGN.md](DESIGN.md#11-recortes-si-falta-tiempo).
 
 ## Hito 5 — Configuración (viernes, recortable)
 
-- [ ] `GameSettings` con PlayerPrefs
-- [ ] Toggles: controles en pantalla, telemetría
-- [ ] Sliders: velocidades y sensibilidad de cámara
-- [ ] Idioma ES/EN
+- [x] `GameSettings` con PlayerPrefs
+- [x] Toggles: controles en pantalla, telemetría
+- [x] Sliders: velocidades y sensibilidad de cámara
+- [x] Idioma ES/EN
 
 ## Hito 6 — Entrega (viernes)
 

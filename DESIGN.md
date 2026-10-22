@@ -190,9 +190,9 @@ muestra el nombre de la activa):
 | Telemetría | Esquina superior izquierda | Tabla: joint, target, real, unidad. Ocultable |
 | Contador | Arriba al centro | `Apiladas: N / 8` |
 | Botón de cámara | Esquina superior derecha | |
-| Controles en pantalla | Abajo al centro | Dos botones por eje que actúan mientras se mantienen (mouse o touch) + botón enganchar. Ocultables (Hito 5) |
+| Controles en pantalla | Abajo al centro | Dos botones por eje que actúan mientras se mantienen (mouse o touch) + botón enganchar. Ocultables desde Configuración |
 | Botón de pausa | Debajo del de cámara | Para jugar sin teclado |
-| Pausa | Centro, con tecla **P** | Reanudar, Controles, Reiniciar (Configuración en el Hito 5) |
+| Pausa | Centro, con tecla **P** | Reanudar, Controles, Configuración, Reiniciar |
 
 Con la pausa abierta la simulación se congela (`timeScale` 0) y `CraneInput`
 queda bloqueado: los ejes valen 0 y no hay enganche ni cambio de cámara.
@@ -200,16 +200,29 @@ Solo la tecla P sigue funcionando.
 
 ### Configuración (se guarda con PlayerPrefs)
 
-- Mostrar controles en pantalla (sí/no)
-- Mostrar telemetría (sí/no)
-- Velocidad de pórtico, carro, izaje y spreader (sliders)
-- Sensibilidad de cámara (órbita y zoom)
-- Idioma: Español / English
+Panel dentro de la pausa. Cada cambio se aplica y se guarda en el momento
+(`GameSettings`); en WebGL queda en el navegador.
+
+| Opción | Control | Rango / valores | Por defecto |
+|---|---|---|---|
+| Controles en pantalla | Toggle | sí / no | sí |
+| Telemetría | Toggle | sí / no | sí |
+| Velocidad de pórtico, carro, izaje y spreader | Slider por eje | ×0,5 a ×2 | ×1 |
+| Sensibilidad de cámara (órbita y zoom) | Slider | ×0,25 a ×3 | ×1 |
+| Idioma | Dos botones | Español / English | Español |
+
+El botón **Restablecer** vuelve todo a los valores por defecto. Las claves de
+PlayerPrefs empiezan con `supercrane.`.
 
 ### Idioma
 
-Tabla propia (ScriptableObject con clave → texto ES/EN) y un componente
-`LocalizedText` en cada texto. Sin el paquete Localization.
+Tabla en código (`Strings`, clave → texto ES/EN) y un componente
+`LocalizedText` en cada texto fijo. Los textos que cambian (botón de cámara,
+contador, estado del spreader, telemetría) piden la clave a `Strings` y se
+actualizan con el evento `Strings.Changed`. Sin el paquete Localization.
+
+Los números usan coma decimal en español y punto en inglés, sin depender de
+la cultura del sistema (en WebGL siempre es la invariante).
 
 ## 9. Controles
 

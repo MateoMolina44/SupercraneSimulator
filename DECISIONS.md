@@ -4,6 +4,8 @@ Registro corto de decisiones de diseño y técnicas. La más nueva va arriba.
 
 | Fecha | Tema | Decisión | Motivo |
 |---|---|---|---|
+| 2026-10-22 | Idioma | Tabla en código (`Strings`) en vez de ScriptableObject | Más simple, sin asset aparte que se desincronice con la escena generada |
+| 2026-10-22 | Números | Coma en español y punto en inglés, con formato propio | En WebGL la cultura del sistema es siempre la invariante |
 | 2026-10-22 | Pausa | `timeScale` 0 + `CraneInput.Locked`; botón de pausa en el HUD además de la tecla P | Que no se mueva nada ni se enganche con el menú abierto; jugable sin teclado |
 | 2026-10-22 | Cámara orbital | Sigue al pórtico con suavizado; la rueda usa solo el signo | La rueda devuelve valores muy distintos en Windows y en WebGL |
 | 2026-10-22 | Zona de apilado | Volumen lógico de 14 × 5 m en (−5, 0, 4,7), sin trigger | Más simple que un trigger y no interfiere con la física |
@@ -31,7 +33,7 @@ Registro corto de decisiones de diseño y técnicas. La más nueva va arriba.
 | 2026-10-22 | Cargas | 4 contenedores + 4 cajas | Demuestra la tarea sin cargar WebGL |
 | 2026-10-22 | Recorridos | Pórtico ±15 m, carro 2-20 m, izaje 0-12 m | Alcanza 2-3 bahías del barco |
 | 2026-10-22 | Enganche | FixedJoint en runtime con Espacio; cerca + alineado ±15° | No suma Articulation Bodies; da sentido al giro del spreader |
-| 2026-10-22 | Idioma | ES/EN con tabla propia (ScriptableObject) | Sin paquete Localization, liviano |
+| 2026-10-22 | Idioma | ES/EN con tabla propia (ScriptableObject; después pasó a código, ver arriba) | Sin paquete Localization, liviano |
 | 2026-10-22 | Config | Persistente con PlayerPrefs | Se guarda en el navegador en WebGL |
 | 2026-10-22 | Pausa | Tecla P (no Esc) con Reanudar/Config/Controles/Reiniciar | Esc sale de pantalla completa en WebGL |
 | 2026-10-22 | UI | uGUI; telemetría en tabla; contador de apiladas | Simple y conocido |

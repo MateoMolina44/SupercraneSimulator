@@ -17,11 +17,10 @@ Assets/
 │  │  ├─ Gameplay/     Cargas, enganche, zona de apilado
 │  │  ├─ UI/           Telemetría, controles en pantalla, pausa, config
 │  │  ├─ Settings/     Configuración persistente (PlayerPrefs)
-│  │  └─ Localization/ Tabla ES/EN y textos traducibles
+│  │  └─ Localization/ Strings (tabla ES/EN) y LocalizedText
 │  ├─ Editor/
 │  │  ├─ SupercraneSimulator.Editor.asmdef   (solo Editor)
 │  │  └─ SceneBuilder/ Menú "Supercrane → Build Scene"
-│  ├─ Data/            ScriptableObjects (tabla de idioma)
 │  ├─ Prefabs/         Crane, Container20, Crate, StackZone, Ship
 │  ├─ Models/Generated Mallas con el tamaño aplicado (las crea el builder)
 │  ├─ Materials/       Paleta de puerto (URP Lit, los crea el builder)
@@ -67,7 +66,8 @@ Main
 │  └─ CameraSwitcher
 └─ --- UI ---
    ├─ HUD             (telemetría, contador, botones de cámara y pausa, controles)
-   ├─ PauseCanvas     (PauseMenu; Overlay con MainPanel y ControlsPanel)
+   ├─ GameSettings
+   ├─ PauseCanvas     (PauseMenu; Overlay con MainPanel, ControlsPanel y SettingsPanel)
    └─ EventSystem
 ```
 
@@ -97,11 +97,11 @@ queda con escala (1,1,1).
 | ✅ `StackZone` | Gameplay | Cuenta cargas sueltas y quietas dentro de la zona |
 | ✅ `JointTelemetryView` | UI | Tabla de target y valor real por joint |
 | ✅ `StackCounterView` | UI | Muestra `Apiladas: N / total` y el estado del spreader |
-| ✅ `PauseMenu` | UI | Pausa con P, paneles de configuración y controles |
-| `SettingsView` | UI | Toggles y sliders de configuración |
-| `GameSettings` | Settings | Valores de config, carga y guarda con PlayerPrefs, avisa cambios |
-| `LocalizationTable` | Localization | ScriptableObject clave → ES/EN |
-| `LocalizedText` | Localization | Actualiza un texto al cambiar el idioma |
+| ✅ `PauseMenu` | UI | Pausa con P o botón; paneles principal, controles y configuración |
+| ✅ `SettingsView` | UI | Toggles, sliders e idioma del panel de configuración |
+| ✅ `GameSettings` | Settings | Carga y guarda con PlayerPrefs y aplica: paneles, velocidades, sensibilidad, idioma |
+| ✅ `Strings` | Localization | Tabla clave → ES/EN, idioma actual y formato de números |
+| ✅ `LocalizedText` | Localization | Actualiza un texto al cambiar el idioma |
 | ✅ `SceneBuilder` | Editor | Genera la escena completa con valores de DESIGN.md |
 | ✅ `BuilderAssets` | Editor | Mallas con tamaño aplicado y materiales URP |
 
