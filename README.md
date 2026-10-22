@@ -10,6 +10,12 @@ apilarlos dentro de una zona marcada del muelle.
 - **Motor:** Unity 6000.3.14f1 (6.3 LTS), URP
 - **Plataforma objetivo:** Web (WebGL) en itch.io
 
+![Grúa pórtico STS en el muelle](Docs/Screenshots/external.png)
+
+| Cabina (POV del operador) | Cámara vertical de la grúa |
+|---|---|
+| ![Vista desde la cabina](Docs/Screenshots/cabin.png) | ![Vista vertical desde el carro](Docs/Screenshots/crane.png) |
+
 ## Controles
 
 | Acción | Tecla |
