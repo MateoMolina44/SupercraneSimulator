@@ -85,6 +85,7 @@ queda con escala (1,1,1).
 |---|---|---|
 | ✅ `DrivenJoint` | Crane | Envuelve un ArticulationBody con drive: rango, rampa, target, valor real, unidad y offset |
 | ✅ `CraneController` | Crane | Lee los ejes en `Update` y los aplica a cada `DrivenJoint` en `FixedUpdate` |
+| ✅ `CabinJoystick` | Crane | Inclina y gira los joysticks de la cabina según la entrada |
 | ✅ `RopeLine` | Crane | Dibuja los cables del carro al izaje con un LineRenderer |
 | ✅ `CraneAxis` | Input | Enum de los 4 ejes |
 | ✅ `CraneInput` | Input | Acciones del Input System creadas en código, combinadas con los botones de UI |

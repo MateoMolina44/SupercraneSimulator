@@ -67,12 +67,14 @@ namespace SupercraneSimulator.Editor.SceneBuilder
             var environment = Group("--- Environment ---");
             BuildEnvironment(environment);
 
-            Group("--- Crane ---");
-            var crane = BuildCrane();
-
+            // La entrada se crea antes que la grúa porque los joysticks de la cabina la leen.
             var systems = Group("--- Systems ---");
             var input = new GameObject("CraneInput").AddComponent<CraneInput>();
             input.transform.SetParent(systems, false);
+
+            Group("--- Crane ---");
+            var crane = BuildCrane(input);
+
             var controller = new GameObject("CraneController").AddComponent<CraneController>();
             controller.transform.SetParent(systems, false);
             controller.Configure(input, crane.Gantry, crane.Trolley, crane.Hoist, crane.Spreader);
@@ -145,7 +147,7 @@ namespace SupercraneSimulator.Editor.SceneBuilder
             public Camera CraneCamera;
         }
 
-        private static CraneParts BuildCrane()
+        private static CraneParts BuildCrane(CraneInput input)
         {
             var parts = new CraneParts();
 
@@ -168,7 +170,7 @@ namespace SupercraneSimulator.Editor.SceneBuilder
             var trolley = Body("Trolley", gantry.transform, new Vector3(GantryStart, GirderTopY, TrolleyStart), TrolleyMass);
             parts.Trolley = DrivenPrismatic(trolley, Quaternion.Euler(0f, -90f, 0f), "Carro", 2f, 20f, TrolleyStart, 2.5f, 2.5f, 200f, 30f);
             Box(trolley.transform, "TrolleyFrame", new Vector3(0f, 0.5f, 0f), new Vector3(4f, 1f, 3f), _materials.CraneRed, false);
-            parts.CabinCamera = BuildCabin(trolley.transform);
+            parts.CabinCamera = BuildCabin(trolley.transform, input);
             parts.CraneCamera = BuildCraneCamera(trolley.transform);
             SetBoxInertia(trolley, new Vector3(4f, 1f, 3f), new Vector3(0f, 0.5f, 0f));
 
@@ -241,24 +243,27 @@ namespace SupercraneSimulator.Editor.SceneBuilder
         }
 
         /// <summary>
-        /// Cabina vidriada colgada del carro, del lado del mar respecto del izaje. Por dentro tiene
-        /// piso de vidrio, asiento, consolas con joysticks y un tablero; la cámara va a la altura de
-        /// la cabeza del operador mirando hacia abajo, como en las STS reales.
+        /// Cabina vidriada colgada del carro, del lado tierra respecto del izaje y girada 180° para
+        /// que el operador mire hacia el mar. Por dentro tiene piso de vidrio, asiento, consolas
+        /// con joysticks y un tablero; la cámara va a la altura de la cabeza mirando hacia abajo,
+        /// como en las STS reales. En coordenadas de la cabina el operador mira hacia -Z y su
+        /// izquierda es +X.
         /// </summary>
-        private static Camera BuildCabin(Transform trolley)
+        private static Camera BuildCabin(Transform trolley, CraneInput input)
         {
             const float width = 2.4f;   // X
             const float height = 2.4f;  // Y
             const float depth = 2.6f;   // Z
             const float top = -0.3f;
             const float bar = 0.1f;
-            var center = new Vector3(0f, top - height / 2f, 2.2f);
+            var center = new Vector3(0f, top - height / 2f, -2.2f);
             var halfW = width / 2f - bar / 2f;
             var halfD = depth / 2f - bar / 2f;
 
             var cabin = new GameObject("Cabin").transform;
             cabin.SetParent(trolley, false);
             cabin.localPosition = center;
+            cabin.localRotation = Quaternion.Euler(0f, 180f, 0f);
             var frame = _materials.CabinFrame;
 
             // Colgantes hasta el carro.
@@ -293,7 +298,7 @@ namespace SupercraneSimulator.Editor.SceneBuilder
             Glass(cabin, "Glass_Back", new Vector3(0f, 0f, -depth / 2f), new Vector3(width - 0.1f, height - 0.1f, 0.02f));
             Glass(cabin, "Glass_Front", new Vector3(0f, 0.5f, depth / 2f), new Vector3(width - 0.1f, height - 1.1f, 0.02f));
 
-            // Tablero y armario detrás del operador (lado mar).
+            // Tablero y armario detrás del operador (lado tierra).
             Box(cabin, "Panel_Front", new Vector3(0f, -height / 2f + 0.55f, halfD - 0.02f), new Vector3(width - 0.2f, 1f, 0.08f), frame, false);
             Box(cabin, "Cabinet", new Vector3(0.75f, -height / 2f + 0.85f, halfD - 0.3f), new Vector3(0.7f, 1.6f, 0.45f), _materials.CabinPanel, false);
 
@@ -306,12 +311,19 @@ namespace SupercraneSimulator.Editor.SceneBuilder
             foreach (var x in new[] { -0.55f, 0.55f })
             {
                 Box(cabin, "Console", new Vector3(x, seatY + 0.12f, 0.2f), new Vector3(0.32f, 0.22f, 0.7f), _materials.ConsoleGrey, false);
-                Shape(cabin, "JoystickStick", BuilderAssets.Cylinder(0.04f, 0.18f), new Vector3(x, seatY + 0.32f, 0.05f), _materials.Dark);
-                Box(cabin, "JoystickKnob", new Vector3(x, seatY + 0.43f, 0.05f), new Vector3(0.08f, 0.08f, 0.1f), _materials.CraneRed, false);
                 Box(cabin, "Screen", new Vector3(x, seatY + 0.3f, -0.15f), new Vector3(0.28f, 0.2f, 0.03f), _materials.Screen, false);
             }
 
-            // Cámara a la altura de la cabeza, mirando hacia el izaje y hacia abajo por el piso de vidrio.
+            // Joysticks. Inclinar hacia adelante es rotar en -X (el operador mira a -Z);
+            // inclinar a la derecha del operador es rotar en +Z.
+            // Izquierdo: adelante/atrás = carro (W/S), costados = pórtico (A/D).
+            Joystick(cabin, "Joystick_Left", new Vector3(0.55f, seatY + 0.23f, 0.05f), input,
+                (CraneAxis.Trolley, -20f), null, (CraneAxis.Gantry, 20f));
+            // Derecho: adelante = bajar (F), atrás = subir (R); girar el palo = spreader (Q/E).
+            Joystick(cabin, "Joystick_Right", new Vector3(-0.55f, seatY + 0.23f, 0.05f), input,
+                (CraneAxis.Hoist, -20f), (CraneAxis.Spreader, 35f), null);
+
+            // Cámara a la altura de la cabeza, mirando al mar y hacia abajo por el piso de vidrio.
             var camera = new GameObject("CabinCamera").AddComponent<Camera>();
             camera.transform.SetParent(cabin, false);
             camera.transform.localPosition = new Vector3(0f, seatY + 0.85f, 0.5f);
@@ -337,6 +349,18 @@ namespace SupercraneSimulator.Editor.SceneBuilder
             camera.farClipPlane = 500f;
             camera.gameObject.AddComponent<AudioListener>();
             return camera;
+        }
+
+        private static void Joystick(Transform cabin, string name, Vector3 basePosition, CraneInput input,
+            (CraneAxis, float)? pitch, (CraneAxis, float)? twist, (CraneAxis, float)? roll)
+        {
+            // El pivote está en la base: al rotarlo se inclinan el palo y la perilla.
+            var pivot = new GameObject(name).transform;
+            pivot.SetParent(cabin, false);
+            pivot.localPosition = basePosition;
+            Shape(pivot, "Stick", BuilderAssets.Cylinder(0.04f, 0.18f), new Vector3(0f, 0.09f, 0f), _materials.Dark);
+            Box(pivot, "Knob", new Vector3(0f, 0.2f, 0f), new Vector3(0.08f, 0.08f, 0.1f), _materials.CraneRed, false);
+            pivot.gameObject.AddComponent<CabinJoystick>().Configure(input, pitch, twist, roll);
         }
 
         private static void Glass(Transform parent, string name, Vector3 localPosition, Vector3 size)

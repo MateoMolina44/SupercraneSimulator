@@ -160,11 +160,18 @@ muestra el nombre de la activa):
 
 ### Cabina
 
-- Cuelga del carro del lado del mar (z +0,9 a +3,5 m respecto del carro),
-  para no chocar con el bloque del izaje.
+- Cuelga del carro del lado tierra (z −0,9 a −3,5 m respecto del carro),
+  para no chocar con el bloque del izaje, y **el operador mira hacia el mar**:
+  ve el spreader adelante y abajo, a través del piso de vidrio.
 - Mide 2,4 × 2,4 × 2,6 m. Marco verde agua, vidrios transparentes en el piso
   y en las cuatro caras, tablero y armario detrás del operador.
 - El asiento queda detrás de la cámara para no tapar el piso.
+- **Los joysticks se mueven con la entrada** (teclado o botones de UI):
+
+| Joystick | Adelante / atrás | Costados | Girar el palo |
+|---|---|---|---|
+| Izquierdo | Carro: W hacia el mar, S hacia tierra | Pórtico: A / D | – |
+| Derecho | Izaje: F empuja (baja), R tira (sube) | – | Spreader: Q / E |
 - Las vigas transversales del pórtico van por encima del carro (y ≈ 18,5 m)
   para que la cabina pase entre las patas.
 

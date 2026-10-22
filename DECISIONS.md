@@ -4,6 +4,7 @@ Registro corto de decisiones de diseño y técnicas. La más nueva va arriba.
 
 | Fecha | Tema | Decisión | Motivo |
 |---|---|---|---|
+| 2026-10-22 | Cabina | Del lado tierra del izaje, girada para mirar al mar; joysticks animados con la entrada | Corrección de Mateo: miraba al muelle; los controles tienen que reflejar lo que hace el usuario |
 | 2026-10-22 | Balanceo | Masas más altas, rampas de 1 a 2,5 s, damping 15 en cables, frenado antes de los topes | Pedido de Mateo: la grúa se movía demasiado; ahora frena con 4-6° |
 | 2026-10-22 | Cámaras | Tres cámaras: externa, cabina POV y vertical en el carro | Pedido de Mateo: POV real del operador y vista para alinear el spreader |
 | 2026-10-22 | Cabina | Interior modelado (vidrios, consolas, asiento) con la cámara en la cabeza | Referencia de una cabina STS real |
