@@ -28,7 +28,7 @@ Orden de recortes en [DESIGN.md](DESIGN.md#11-recortes-si-falta-tiempo).
 - [x] `DrivenJoint` + `CraneController` (targets en `FixedUpdate`)
 - [x] Acciones del Input System (WASD, QE, RF, Espacio, C, P)
 - [x] Telemetría: target y valor real por joint
-- [ ] Build WebGL de control
+- [x] Build WebGL de control
 
 ## Hito 3 — Tarea (viernes temprano)
 
@@ -54,8 +54,12 @@ Orden de recortes en [DESIGN.md](DESIGN.md#11-recortes-si-falta-tiempo).
 
 ## Hito 6 — Entrega (viernes)
 
-- [ ] Ajuste de masas, drives y estabilidad
-- [ ] Checklist de prueba (WORKFLOW.md) en Play y en WebGL
-- [ ] Build WebGL final en itch.io
-- [ ] README con link, controles y captura
-- [ ] Repo público y limpio
+- [x] Ajuste de masas, drives y estabilidad
+- [x] Validador de la consigna (Supercrane → Validate Consigna)
+- [x] Checklist de prueba (WORKFLOW.md) en Play
+- [ ] Checklist de prueba en WebGL (cuando esté en itch.io)
+- [x] Build WebGL final (`Build/SupercraneSimulator-Web.zip`)
+- [ ] Subirlo a itch.io (Mateo)
+- [x] README con controles, consigna y capturas
+- [ ] Link de itch.io en el README
+- [x] Repo limpio: sin restos de la plantilla ni carpetas generadas

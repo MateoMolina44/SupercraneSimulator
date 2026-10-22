@@ -20,17 +20,16 @@ Assets/
 │  │  └─ Localization/ Strings (tabla ES/EN) y LocalizedText
 │  ├─ Editor/
 │  │  ├─ SupercraneSimulator.Editor.asmdef   (solo Editor)
+│  │  ├─ ConsignaValidator.cs  Menú "Supercrane → Validate Consigna"
 │  │  └─ SceneBuilder/ Menú "Supercrane → Build Scene"
-│  ├─ Prefabs/         Crane, Container20, Crate, StackZone, Ship
 │  ├─ Models/Generated Mallas con el tamaño aplicado (las crea el builder)
 │  ├─ Materials/       Paleta de puerto (URP Lit, los crea el builder)
 │  └─ Physics/         PhysicsMaterials
 ├─ Settings/           Assets de URP (de la plantilla)
-└─ InputSystem_Actions.inputactions
+└─ InputSystem_Actions.inputactions   (de la plantilla, sin uso: las acciones se crean en CraneInput)
+Docs/Screenshots/      Capturas para el README y la portada de itch.io
+Tools/package_web.py   Empaqueta el build Web para itch.io
 ```
-
-`TutorialInfo/` y `Scenes/SampleScene.unity` son de la plantilla y se borran
-cuando exista la escena propia.
 
 ## Assemblies
 
@@ -103,6 +102,7 @@ queda con escala (1,1,1).
 | ✅ `Strings` | Localization | Tabla clave → ES/EN, idioma actual y formato de números |
 | ✅ `LocalizedText` | Localization | Actualiza un texto al cambiar el idioma |
 | ✅ `SceneBuilder` | Editor | Genera la escena completa con valores de DESIGN.md |
-| ✅ `BuilderAssets` | Editor | Mallas con tamaño aplicado y materiales URP |
+| ✅ `BuilderAssets` | Editor | Mallas con tamaño aplicado y materiales URP; borra las mallas viejas al regenerar |
+| ✅ `ConsignaValidator` | Editor | Revisa en la escena los requisitos de la consigna |
 
 Esta tabla se actualiza cuando aparece o desaparece un script.

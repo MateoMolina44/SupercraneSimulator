@@ -83,3 +83,43 @@ Unity.
 - [ ] Play funciona y la grúa no tiembla en reposo
 - [ ] No hay archivos de `Library/` ni `Build/` en el commit
 - [ ] Si cambió un script o una carpeta, actualizar [STRUCTURE.md](STRUCTURE.md)
+
+## Checklist de prueba antes de entregar
+
+En el editor:
+
+- [ ] **Supercrane → Build Scene** sin errores en la consola
+- [ ] **Supercrane → Validate Consigna** dice "cumple todo lo verificable"
+- [ ] Play: la grúa queda quieta en reposo (telemetría: target = real)
+- [ ] Cada eje (A/D, W/S, R/F, Q/E) se mueve, frena antes del tope y la
+      telemetría sigue al target
+- [ ] Los joysticks de la cabina se mueven con la entrada
+- [ ] Enganchar un contenedor: luces amarillas → Espacio → verdes
+- [ ] Llevarlo a la zona y soltarlo: el contador suma 1
+- [ ] Una carga soltada en el agua vuelve al barco
+- [ ] C recorre externa → cabina → grúa; la externa orbita y hace zoom
+- [ ] Botones en pantalla mueven los ejes mientras se mantienen
+- [ ] P pausa (nada se mueve), Controles, Configuración y Reiniciar
+- [ ] Configuración: idioma, velocidades, sensibilidad y toggles se aplican
+      y se mantienen al reiniciar
+
+En el build Web (itch.io), además:
+
+- [ ] Carga sin errores en la consola del navegador (F12)
+- [ ] Teclado y mouse responden después de hacer clic en el juego
+- [ ] Pantalla completa funciona y P sigue pausando
+- [ ] La configuración se mantiene al recargar la página
+
+### Última corrida (2026-10-22, editor)
+
+| Prueba | Resultado |
+|---|---|
+| Validate Consigna | Cumple los 10 requisitos (peor relación de masas 2,5:1) |
+| Reposo 5 s | Velocidad máxima 0,0000 m/s en grúa y cargas |
+| Ejes | Error target-real < 0,5° / 3 cm; balanceo al frenar 4-6° |
+| Enganche y traslado | Contenedor enganchado, llevado y contado (1/8) |
+| 8 cargas en la zona | "¡Barco descargado! 8 / 8" |
+| Carga al agua | Vuelve a su lugar en el barco |
+| Pausa y configuración | Bloquea la entrada; opciones aplicadas y persistidas |
+| Órbita y zoom con mouse | Pendiente de probar a mano |
+| Build Web en itch.io | Pendiente de subir |
