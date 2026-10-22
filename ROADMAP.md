@@ -40,10 +40,10 @@ Orden de recortes en [DESIGN.md](DESIGN.md#11-recortes-si-falta-tiempo).
 
 - [x] Cámara de cabina en el carro (POV con interior)
 - [x] Cámara vertical de la grúa
-- [ ] Cámara orbital
+- [x] Cámara orbital
 - [x] Cambio con C y con botón
-- [ ] Controles en pantalla (botones mantener-presionado)
-- [ ] Pausa con P: reanudar, controles, reiniciar
+- [x] Controles en pantalla (botones mantener-presionado)
+- [x] Pausa con P: reanudar, controles, reiniciar
 
 ## Hito 5 — Configuración (viernes, recortable)
 

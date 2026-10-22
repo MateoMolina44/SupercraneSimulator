@@ -4,6 +4,8 @@ Registro corto de decisiones de diseño y técnicas. La más nueva va arriba.
 
 | Fecha | Tema | Decisión | Motivo |
 |---|---|---|---|
+| 2026-10-22 | Pausa | `timeScale` 0 + `CraneInput.Locked`; botón de pausa en el HUD además de la tecla P | Que no se mueva nada ni se enganche con el menú abierto; jugable sin teclado |
+| 2026-10-22 | Cámara orbital | Sigue al pórtico con suavizado; la rueda usa solo el signo | La rueda devuelve valores muy distintos en Windows y en WebGL |
 | 2026-10-22 | Zona de apilado | Volumen lógico de 14 × 5 m en (−5, 0, 4,7), sin trigger | Más simple que un trigger y no interfiere con la física |
 | 2026-10-22 | Alineación | Contenedores módulo 180°, cajas módulo 90° | Una caja cuadrada se ve igual girada 90° |
 | 2026-10-22 | Cabina | Del lado tierra del izaje, girada para mirar al mar; joysticks animados con la entrada | Corrección de Mateo: miraba al muelle; los controles tienen que reflejar lo que hace el usuario |

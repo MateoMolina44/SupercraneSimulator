@@ -63,11 +63,11 @@ Main
 │  ├─ Container_01 … _04
 │  └─ Crate_01 … _04
 ├─ --- Cameras ---
-│  ├─ ExternalCamera   (pasará a OrbitCamera)
+│  ├─ ExternalCamera   (con OrbitCamera)
 │  └─ CameraSwitcher
 └─ --- UI ---
-   ├─ HUD Canvas      (telemetría, contador, botón cámara, controles)
-   ├─ Pause Canvas    (pausa y configuración)
+   ├─ HUD             (telemetría, contador, botones de cámara y pausa, controles)
+   ├─ PauseCanvas     (PauseMenu; Overlay con MainPanel y ControlsPanel)
    └─ EventSystem
 ```
 
@@ -89,15 +89,15 @@ queda con escala (1,1,1).
 | ✅ `RopeLine` | Crane | Dibuja los cables del carro al izaje con un LineRenderer |
 | ✅ `CraneAxis` | Input | Enum de los 4 ejes |
 | ✅ `CraneInput` | Input | Acciones del Input System creadas en código, combinadas con los botones de UI |
-| `HoldButton` | Input | Botón de UI que informa si está presionado |
+| ✅ `HoldButton` | Input | Botón de UI que informa si está presionado |
 | ✅ `CameraSwitcher` | Cameras | Recorre externa → cabina → grúa con C y con botón; muestra el nombre |
-| `OrbitCamera` | Cameras | Órbita con clic derecho y zoom con rueda |
+| ✅ `OrbitCamera` | Cameras | Órbita con clic derecho y zoom con rueda |
 | ✅ `Load` | Gameplay | Marca una carga (contenedor o caja) y su estado |
 | ✅ `SpreaderGrabber` | Gameplay | Detecta carga válida, crea y destruye el FixedJoint |
 | ✅ `StackZone` | Gameplay | Cuenta cargas sueltas y quietas dentro de la zona |
 | ✅ `JointTelemetryView` | UI | Tabla de target y valor real por joint |
 | ✅ `StackCounterView` | UI | Muestra `Apiladas: N / total` y el estado del spreader |
-| `PauseMenu` | UI | Pausa con P, paneles de configuración y controles |
+| ✅ `PauseMenu` | UI | Pausa con P, paneles de configuración y controles |
 | `SettingsView` | UI | Toggles y sliders de configuración |
 | `GameSettings` | Settings | Valores de config, carga y guarda con PlayerPrefs, avisa cambios |
 | `LocalizationTable` | Localization | ScriptableObject clave → ES/EN |

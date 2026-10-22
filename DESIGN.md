@@ -156,8 +156,10 @@ Las velocidades se pueden cambiar desde Configuración.
 Tres cámaras, en este orden al apretar **C** o el botón de UI (el botón
 muestra el nombre de la activa):
 
-1. **Externa:** vista general del muelle. Pendiente: que sea orbital (clic
-   derecho y arrastrar para orbitar, rueda para zoom).
+1. **Externa (orbital):** gira alrededor de un punto que sigue al pórtico
+   (8 m arriba y 4 m hacia el mar). Clic derecho y arrastrar para orbitar,
+   rueda para acercar o alejar (12 a 90 m). No responde al mouse mientras está
+   la pausa.
 2. **Cabina (POV):** el operador sentado en la cabina, a la altura de la
    cabeza, mirando hacia abajo por el piso de vidrio. Se ven las consolas
    con joysticks a los costados, el marco de la cabina y el spreader abajo.
@@ -188,8 +190,13 @@ muestra el nombre de la activa):
 | Telemetría | Esquina superior izquierda | Tabla: joint, target, real, unidad. Ocultable |
 | Contador | Arriba al centro | `Apiladas: N / 8` |
 | Botón de cámara | Esquina superior derecha | |
-| Controles en pantalla | Abajo | Pares ◀ ▶ que actúan mientras se mantienen + botón enganchar. Ocultables |
-| Pausa | Centro, con tecla **P** | Reanudar, Configuración, Controles, Reiniciar |
+| Controles en pantalla | Abajo al centro | Dos botones por eje que actúan mientras se mantienen (mouse o touch) + botón enganchar. Ocultables (Hito 5) |
+| Botón de pausa | Debajo del de cámara | Para jugar sin teclado |
+| Pausa | Centro, con tecla **P** | Reanudar, Controles, Reiniciar (Configuración en el Hito 5) |
+
+Con la pausa abierta la simulación se congela (`timeScale` 0) y `CraneInput`
+queda bloqueado: los ejes valen 0 y no hay enganche ni cambio de cámara.
+Solo la tecla P sigue funcionando.
 
 ### Configuración (se guarda con PlayerPrefs)
 
