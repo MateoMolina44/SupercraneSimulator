@@ -46,6 +46,22 @@ namespace SupercraneSimulator.Editor.SceneBuilder
             return material;
         }
 
+        /// <summary>Material URP Lit transparente (vidrio). El alfa de <paramref name="color"/> define la opacidad.</summary>
+        public static Material TransparentMaterial(string name, Color color)
+        {
+            var material = Material(name, color, 0.95f);
+            material.SetFloat("_Surface", 1f);
+            material.SetFloat("_Blend", 0f);
+            material.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            material.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            material.SetFloat("_ZWrite", 0f);
+            material.SetOverrideTag("RenderType", "Transparent");
+            material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+            EditorUtility.SetDirty(material);
+            return material;
+        }
+
         private static Mesh Get(PrimitiveType type, Vector3 size, Vector3 baseSize)
         {
             var key = string.Format(CultureInfo.InvariantCulture, "{0}_{1:0.###}x{2:0.###}x{3:0.###}", type, size.x, size.y, size.z);

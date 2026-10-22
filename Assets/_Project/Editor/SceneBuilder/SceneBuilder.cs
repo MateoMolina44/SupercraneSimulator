@@ -69,10 +69,11 @@ namespace SupercraneSimulator.Editor.SceneBuilder
             var external = BuildExternalCamera(cameras);
             var switcher = new GameObject("CameraSwitcher").AddComponent<CameraSwitcher>();
             switcher.transform.SetParent(cameras, false);
-            switcher.Configure(input, crane.CabinCamera, external);
-
             var ui = Group("--- UI ---");
-            BuildUi(ui, controller, switcher);
+            var cameraLabel = BuildUi(ui, controller, switcher);
+            switcher.Configure(input, cameraLabel,
+                new[] { external, crane.CabinCamera, crane.CraneCamera },
+                new[] { "Cámara: Externa (C)", "Cámara: Cabina (C)", "Cámara: Grúa (C)" });
 
             EditorSceneManager.SaveScene(scene, ScenePath);
             EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(ScenePath, true) };
@@ -129,6 +130,7 @@ namespace SupercraneSimulator.Editor.SceneBuilder
             public DrivenJoint Hoist;
             public DrivenJoint Spreader;
             public Camera CabinCamera;
+            public Camera CraneCamera;
         }
 
         private static CraneParts BuildCrane()
@@ -155,6 +157,7 @@ namespace SupercraneSimulator.Editor.SceneBuilder
             parts.Trolley = DrivenPrismatic(trolley, Quaternion.Euler(0f, -90f, 0f), "Carro", 2f, 20f, TrolleyStart, 3f, 200f, 30f);
             Box(trolley.transform, "TrolleyFrame", new Vector3(0f, 0.5f, 0f), new Vector3(4f, 1f, 3f), _materials.CraneRed, false);
             parts.CabinCamera = BuildCabin(trolley.transform);
+            parts.CraneCamera = BuildCraneCamera(trolley.transform);
             SetBoxInertia(trolley, new Vector3(4f, 1f, 3f), new Vector3(0f, 0.5f, 0f));
 
             // 4. Izaje: Prismatic vertical hacia abajo. 0 m es el gancho arriba de todo.
@@ -189,15 +192,27 @@ namespace SupercraneSimulator.Editor.SceneBuilder
 
         private static void BuildGantryVisuals(Transform gantry)
         {
-            var legHeight = GirderTopY - 1f - RailTopY;
+            // Las vigas transversales van por arriba del carro: la cabina cuelga debajo de las
+            // vigas longitudinales y tiene que poder pasar entre las patas.
+            const float portalBeamY = GirderTopY + 2.3f;
+            var legHeight = portalBeamY + 0.5f - RailTopY;
             var legCenterY = RailTopY + legHeight / 2f;
             var legSize = new Vector3(1f, legHeight, 1f);
             foreach (var z in new[] { LandRailZ, SeaRailZ })
             {
                 Box(gantry, $"Leg_L_{z}", new Vector3(-LegHalfSpanX, legCenterY, z), legSize, _materials.CraneRed);
                 Box(gantry, $"Leg_R_{z}", new Vector3(LegHalfSpanX, legCenterY, z), legSize, _materials.CraneRed);
-                Box(gantry, $"CrossBeam_{z}", new Vector3(0f, GirderTopY - 1.5f, z), new Vector3(LegHalfSpanX * 2f + 1f, 1f, 1f), _materials.CraneRed);
+                Box(gantry, $"PortalBeam_{z}", new Vector3(0f, portalBeamY, z), new Vector3(LegHalfSpanX * 2f + 1f, 1f, 1f), _materials.CraneRed);
                 Box(gantry, $"LowerBeam_{z}", new Vector3(0f, 6f, z), new Vector3(LegHalfSpanX * 2f, 0.7f, 0.7f), _materials.White);
+
+                // Tensores de la viga transversal a las longitudinales, por fuera del carro.
+                foreach (var x in new[] { -2.5f, 2.5f })
+                {
+                    var hangerBottom = GirderTopY - 1f;
+                    var hangerTop = portalBeamY - 0.5f;
+                    Box(gantry, $"Hanger_{x}_{z}", new Vector3(x, (hangerBottom + hangerTop) / 2f, z), new Vector3(0.3f, hangerTop - hangerBottom, 0.3f), _materials.CraneRed);
+                    Box(gantry, $"Bracket_{x}_{z}", new Vector3(x * 0.88f, GirderTopY - 1.15f, z), new Vector3(1.2f, 0.3f, 0.5f), _materials.CraneRed);
+                }
             }
 
             // Vigas por donde corre el carro: del lado tierra (backreach) hasta la punta de la pluma.
@@ -213,21 +228,109 @@ namespace SupercraneSimulator.Editor.SceneBuilder
             Box(gantry, "MachineryHouse", new Vector3(0f, GirderTopY + 1.5f, -14f), new Vector3(6f, 3f, 4f), _materials.White);
         }
 
+        /// <summary>
+        /// Cabina vidriada colgada del carro, del lado del mar respecto del izaje. Por dentro tiene
+        /// piso de vidrio, asiento, consolas con joysticks y un tablero; la cámara va a la altura de
+        /// la cabeza del operador mirando hacia abajo, como en las STS reales.
+        /// </summary>
         private static Camera BuildCabin(Transform trolley)
         {
-            // Cabina colgada del carro, a un costado para no tapar el cable.
-            var cabinPosition = new Vector3(2.8f, -1.4f, 0.5f);
-            Box(trolley, "Cabin", cabinPosition, new Vector3(1.8f, 2f, 2.2f), _materials.White, false);
-            Box(trolley, "CabinWindow", cabinPosition + new Vector3(0f, -0.2f, 1.11f), new Vector3(1.5f, 1.2f, 0.05f), _materials.Glass, false);
+            const float width = 2.4f;   // X
+            const float height = 2.4f;  // Y
+            const float depth = 2.6f;   // Z
+            const float top = -0.3f;
+            const float bar = 0.1f;
+            var center = new Vector3(0f, top - height / 2f, 2.2f);
+            var halfW = width / 2f - bar / 2f;
+            var halfD = depth / 2f - bar / 2f;
 
+            var cabin = new GameObject("Cabin").transform;
+            cabin.SetParent(trolley, false);
+            cabin.localPosition = center;
+            var frame = _materials.CabinFrame;
+
+            // Colgantes hasta el carro.
+            foreach (var x in new[] { -0.8f, 0.8f })
+            {
+                Box(cabin, "Hanger", new Vector3(x, height / 2f - top / 2f, 0f), new Vector3(bar, -top, bar), _materials.Steel, false);
+            }
+
+            // Techo, marco del piso y parantes.
+            Box(cabin, "Roof", new Vector3(0f, height / 2f - 0.05f, 0f), new Vector3(width, 0.1f, depth), frame, false);
+            var floorLocalY = -height / 2f + 0.04f;
+            Box(cabin, "FloorBar_Back", new Vector3(0f, floorLocalY, -halfD), new Vector3(width, 0.08f, bar), frame, false);
+            Box(cabin, "FloorBar_Front", new Vector3(0f, floorLocalY, halfD), new Vector3(width, 0.08f, bar), frame, false);
+            Box(cabin, "FloorBar_Left", new Vector3(-halfW, floorLocalY, 0f), new Vector3(bar, 0.08f, depth), frame, false);
+            Box(cabin, "FloorBar_Right", new Vector3(halfW, floorLocalY, 0f), new Vector3(bar, 0.08f, depth), frame, false);
+            Box(cabin, "FloorBar_Middle", new Vector3(0f, floorLocalY, 0.3f), new Vector3(width, 0.08f, bar), frame, false);
+            foreach (var x in new[] { -halfW, halfW })
+            {
+                foreach (var z in new[] { -halfD, halfD })
+                {
+                    Box(cabin, "Pillar", new Vector3(x, 0f, z), new Vector3(bar, height, bar), frame, false);
+                }
+
+                // Barandas a media altura en los laterales.
+                Box(cabin, "SideRail", new Vector3(x, -0.2f, 0f), new Vector3(bar, 0.06f, depth), frame, false);
+            }
+
+            // Vidrios: piso y las cuatro caras.
+            Glass(cabin, "Glass_Floor", new Vector3(0f, -height / 2f + 0.02f, 0f), new Vector3(width - 0.1f, 0.02f, depth - 0.1f));
+            Glass(cabin, "Glass_Left", new Vector3(-width / 2f, 0f, 0f), new Vector3(0.02f, height - 0.1f, depth - 0.1f));
+            Glass(cabin, "Glass_Right", new Vector3(width / 2f, 0f, 0f), new Vector3(0.02f, height - 0.1f, depth - 0.1f));
+            Glass(cabin, "Glass_Back", new Vector3(0f, 0f, -depth / 2f), new Vector3(width - 0.1f, height - 0.1f, 0.02f));
+            Glass(cabin, "Glass_Front", new Vector3(0f, 0.5f, depth / 2f), new Vector3(width - 0.1f, height - 1.1f, 0.02f));
+
+            // Tablero y armario detrás del operador (lado mar).
+            Box(cabin, "Panel_Front", new Vector3(0f, -height / 2f + 0.55f, halfD - 0.02f), new Vector3(width - 0.2f, 1f, 0.08f), frame, false);
+            Box(cabin, "Cabinet", new Vector3(0.75f, -height / 2f + 0.85f, halfD - 0.3f), new Vector3(0.7f, 1.6f, 0.45f), _materials.CabinPanel, false);
+
+            // Asiento y consolas con joysticks a los costados.
+            var seatY = -height / 2f + 0.5f;
+            // El asiento queda detrás de la cámara para no tapar el piso de vidrio.
+            Box(cabin, "Seat", new Vector3(0f, seatY, 0.85f), new Vector3(0.6f, 0.15f, 0.6f), _materials.Dark, false);
+            Box(cabin, "SeatBack", new Vector3(0f, seatY + 0.45f, 1.15f), new Vector3(0.6f, 0.8f, 0.12f), _materials.Dark, false);
+            Box(cabin, "SeatPost", new Vector3(0f, seatY - 0.28f, 0.85f), new Vector3(0.12f, 0.42f, 0.12f), _materials.Steel, false);
+            foreach (var x in new[] { -0.55f, 0.55f })
+            {
+                Box(cabin, "Console", new Vector3(x, seatY + 0.12f, 0.2f), new Vector3(0.32f, 0.22f, 0.7f), _materials.ConsoleGrey, false);
+                Shape(cabin, "JoystickStick", BuilderAssets.Cylinder(0.04f, 0.18f), new Vector3(x, seatY + 0.32f, 0.05f), _materials.Dark);
+                Box(cabin, "JoystickKnob", new Vector3(x, seatY + 0.43f, 0.05f), new Vector3(0.08f, 0.08f, 0.1f), _materials.CraneRed, false);
+                Box(cabin, "Screen", new Vector3(x, seatY + 0.3f, -0.15f), new Vector3(0.28f, 0.2f, 0.03f), _materials.Screen, false);
+            }
+
+            // Cámara a la altura de la cabeza, mirando hacia el izaje y hacia abajo por el piso de vidrio.
             var camera = new GameObject("CabinCamera").AddComponent<Camera>();
-            camera.transform.SetParent(trolley, false);
-            camera.transform.localPosition = cabinPosition + new Vector3(0f, -0.3f, 0.9f);
-            camera.transform.localRotation = Quaternion.Euler(55f, -12f, 0f);
-            camera.nearClipPlane = 0.1f;
-            camera.fieldOfView = 70f;
+            camera.transform.SetParent(cabin, false);
+            camera.transform.localPosition = new Vector3(0f, seatY + 0.85f, 0.5f);
+            camera.transform.localRotation = Quaternion.Euler(58f, 180f, 0f);
+            camera.nearClipPlane = 0.05f;
+            camera.fieldOfView = 80f;
+            camera.farClipPlane = 500f;
             camera.gameObject.AddComponent<AudioListener>();
             return camera;
+        }
+
+        /// <summary>
+        /// Cámara vertical colgada del carro, mirando derecho hacia abajo al spreader.
+        /// Posición tomada de la "Crane Camera" que armó Mateo en el editor.
+        /// </summary>
+        private static Camera BuildCraneCamera(Transform trolley)
+        {
+            var camera = new GameObject("CraneCamera").AddComponent<Camera>();
+            camera.transform.SetParent(trolley, false);
+            camera.transform.localPosition = new Vector3(0f, 0.22f, 0.42f);
+            camera.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            camera.fieldOfView = 60f;
+            camera.farClipPlane = 500f;
+            camera.gameObject.AddComponent<AudioListener>();
+            return camera;
+        }
+
+        private static void Glass(Transform parent, string name, Vector3 localPosition, Vector3 size)
+        {
+            var go = Box(parent, name, localPosition, size, _materials.Glass, false);
+            go.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         }
 
         private static void BuildRopes(Transform trolley, Transform hoist)
@@ -288,7 +391,8 @@ namespace SupercraneSimulator.Editor.SceneBuilder
             return camera;
         }
 
-        private static void BuildUi(Transform parent, CraneController controller, CameraSwitcher switcher)
+        /// <summary>Arma el HUD y devuelve el texto del botón de cámara.</summary>
+        private static Text BuildUi(Transform parent, CraneController controller, CameraSwitcher switcher)
         {
             var eventSystem = new GameObject("EventSystem", typeof(EventSystem), typeof(InputSystemUIInputModule));
             eventSystem.transform.SetParent(parent, false);
@@ -310,12 +414,13 @@ namespace SupercraneSimulator.Editor.SceneBuilder
             panel.gameObject.AddComponent<JointTelemetryView>().Configure(controller, labels, targets, actuals);
 
             // Botón de cámara: esquina superior derecha.
-            var buttonRect = Panel(canvas, "CameraButton", new Vector2(1f, 1f), new Vector2(-16f, -16f), new Vector2(150f, 44f));
+            var buttonRect = Panel(canvas, "CameraButton", new Vector2(1f, 1f), new Vector2(-16f, -16f), new Vector2(230f, 44f));
             var button = buttonRect.gameObject.AddComponent<Button>();
             button.targetGraphic = buttonRect.GetComponent<Image>();
-            var buttonLabel = Label(buttonRect, "Text", Vector2.zero, new Vector2(150f, 44f), TextAnchor.MiddleCenter);
+            var buttonLabel = Label(buttonRect, "Text", Vector2.zero, new Vector2(230f, 44f), TextAnchor.MiddleCenter);
             buttonLabel.text = "Cámara (C)";
-            UnityEventTools.AddPersistentListener(button.onClick, switcher.Toggle);
+            UnityEventTools.AddPersistentListener(button.onClick, switcher.Next);
+            return buttonLabel;
         }
 
         private static RectTransform Panel(Transform parent, string name, Vector2 anchor, Vector2 position, Vector2 size)
@@ -476,7 +581,12 @@ namespace SupercraneSimulator.Editor.SceneBuilder
             public readonly Material Concrete = BuilderAssets.Material("Concrete", new Color(0.55f, 0.55f, 0.53f), 0.1f);
             public readonly Material Water = BuilderAssets.Material("Water", new Color(0.12f, 0.3f, 0.45f), 0.9f);
             public readonly Material Hull = BuilderAssets.Material("ShipHull", new Color(0.15f, 0.18f, 0.22f));
-            public readonly Material Glass = BuilderAssets.Material("Glass", new Color(0.3f, 0.45f, 0.55f), 0.95f);
+            public readonly Material Glass = BuilderAssets.TransparentMaterial("Glass", new Color(0.55f, 0.7f, 0.78f, 0.18f));
+            public readonly Material CabinFrame = BuilderAssets.Material("CabinFrame", new Color(0.36f, 0.62f, 0.52f), 0.4f);
+            public readonly Material CabinPanel = BuilderAssets.Material("CabinPanel", new Color(0.42f, 0.7f, 0.6f), 0.3f);
+            public readonly Material ConsoleGrey = BuilderAssets.Material("ConsoleGrey", new Color(0.75f, 0.76f, 0.78f), 0.4f);
+            public readonly Material Dark = BuilderAssets.Material("Dark", new Color(0.12f, 0.12f, 0.13f), 0.3f);
+            public readonly Material Screen = BuilderAssets.Material("Screen", new Color(0.15f, 0.25f, 0.35f), 0.9f);
         }
     }
 }

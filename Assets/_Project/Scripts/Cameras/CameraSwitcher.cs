@@ -1,64 +1,71 @@
 using SupercraneSimulator.Input;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace SupercraneSimulator.Cameras
 {
     /// <summary>
-    /// Alterna entre la cámara de cabina y la externa con la tecla C o un botón de UI.
+    /// Recorre las cámaras en orden con la tecla C o un botón de UI. Solo una queda activa.
     /// </summary>
     public sealed class CameraSwitcher : MonoBehaviour
     {
         [SerializeField] private CraneInput _input;
-        [SerializeField] private Camera _cabinCamera;
-        [SerializeField] private Camera _externalCamera;
-        [SerializeField] private bool _startInCabin;
+        [SerializeField] private Camera[] _cameras;
+        [SerializeField] private string[] _names;
+        [SerializeField, Tooltip("Opcional: muestra el nombre de la cámara activa")]
+        private Text _label;
+        [SerializeField, Min(0)] private int _startIndex;
 
-        private bool _inCabin;
+        private int _index;
 
-        public bool InCabin => _inCabin;
+        public int Index => _index;
 
         private void Start()
         {
-            SetCabin(_startInCabin);
+            Select(_startIndex);
         }
 
         private void OnEnable()
         {
-            _input.CameraPressed += Toggle;
+            _input.CameraPressed += Next;
         }
 
         private void OnDisable()
         {
-            _input.CameraPressed -= Toggle;
+            _input.CameraPressed -= Next;
         }
 
-        public void Toggle()
+        public void Next()
         {
-            SetCabin(!_inCabin);
+            Select((_index + 1) % _cameras.Length);
         }
 
-        public void Configure(CraneInput input, Camera cabin, Camera external)
+        public void Configure(CraneInput input, Text label, Camera[] cameras, string[] names)
         {
             _input = input;
-            _cabinCamera = cabin;
-            _externalCamera = external;
+            _label = label;
+            _cameras = cameras;
+            _names = names;
         }
 
-        private void SetCabin(bool inCabin)
+        private void Select(int index)
         {
-            _inCabin = inCabin;
-            _cabinCamera.enabled = inCabin;
-            _externalCamera.enabled = !inCabin;
-
-            // Un solo AudioListener activo.
-            if (_cabinCamera.TryGetComponent(out AudioListener cabinListener))
+            _index = Mathf.Clamp(index, 0, _cameras.Length - 1);
+            for (var i = 0; i < _cameras.Length; i++)
             {
-                cabinListener.enabled = inCabin;
+                var active = i == _index;
+                _cameras[i].enabled = active;
+
+                // Un solo AudioListener activo.
+                if (_cameras[i].TryGetComponent(out AudioListener listener))
+                {
+                    listener.enabled = active;
+                }
             }
 
-            if (_externalCamera.TryGetComponent(out AudioListener externalListener))
+            if (_label != null && _names != null && _index < _names.Length)
             {
-                externalListener.enabled = !inCabin;
+                _label.text = _names[_index];
             }
         }
     }
