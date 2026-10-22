@@ -54,12 +54,12 @@ Base             (raíz, immovable — rieles)
 | # | Cuerpo | Joint | Eje | Límites | Drive | Masa |
 |---|---|---|---|---|---|---|
 | 1 | Base | raíz | – | – | – | immovable |
-| 2 | Gantry | Prismatic | X | −15 a 15 m | Sí | 2000 kg |
-| 3 | Trolley | Prismatic | Z | 2 a 20 m | Sí | 1000 kg |
-| 4 | Hoist | Prismatic | −Y | 0 a 12 m | Sí | 500 kg |
-| 5 | CableUpper | Spherical | – | swing ±45° (ajustar) | No | 200 kg |
-| 6 | CableLower | Spherical | – | swing ±45° (ajustar) | No | 200 kg |
-| 7 | Spreader | Revolute | Y | ±180° | Sí | 500 kg |
+| 2 | Gantry | Prismatic | X | −15 a 15 m | Sí | 3000 kg |
+| 3 | Trolley | Prismatic | Z | 2 a 20 m | Sí | 2000 kg |
+| 4 | Hoist | Prismatic | −Y | 0 a 12 m | Sí | 1500 kg |
+| 5 | CableUpper | Spherical | – | swing ±45° | No | 800 kg |
+| 6 | CableLower | Spherical | – | swing ±45° | No | 800 kg |
+| 7 | Spreader | Revolute | Y | ±180° | Sí | 2000 kg |
 
 Cumple la consigna: 7 cuerpos (6 a 10), 3 tipos de joint (Prismatic,
 Spherical, Revolute), 4 drives, 2 cuerpos pasivos.
@@ -82,13 +82,19 @@ Cargas (Rigidbody comunes): contenedor 800 kg, caja 150 kg.
 - Drives en modo **Acceleration**: no dependen de la masa que cuelga, así que
   sirven igual con o sin carga.
 
-| Joint | Stiffness | Damping | Velocidad | Posición inicial |
-|---|---|---|---|---|
-| Pórtico | 200 | 30 | 3 m/s | 0 m |
-| Carro | 200 | 30 | 3 m/s | 6 m |
-| Izaje | 400 | 40 | 2 m/s | 3 m |
-| Spreader | 400 | 40 | 45 °/s | 0° |
-| Cables (pasivos) | 0 | 0,5 | – | – |
+| Joint | Stiffness | Damping | Velocidad | Rampa | Posición inicial |
+|---|---|---|---|---|---|
+| Pórtico | 200 | 30 | 1,5 m/s | 2,5 s | 0 m |
+| Carro | 200 | 30 | 2,5 m/s | 2,5 s | 6 m |
+| Izaje | 400 | 40 | 1,5 m/s | 1 s | 3 m |
+| Spreader | 400 | 40 | 30 °/s | 0,6 s | 0° |
+| Cables (pasivos) | 0 | 15 | – | – | – |
+
+- La amortiguación de los cables hace de **anti-balanceo**, como los cables
+  en trapecio de una STS real. Medido: al frenar a fondo el balanceo queda
+  en 3,9° (pórtico) y 6° (carro) y a los 3 s casi desaparece.
+- Cerca de un tope, `DrivenJoint` limita la velocidad a la que permite frenar
+  justo ahí, así no se para en seco.
 
 - **Ningún joint arranca en un límite.** Si un Prismatic se arma justo en su
   tope, PhysX lo empuja hacia adentro en el primer paso y el cable sale
@@ -96,11 +102,11 @@ Cargas (Rigidbody comunes): contenedor 800 kg, caja 150 kg.
   `DrivenJoint` suma un offset para mostrar la medida real.
 - El límite físico del spreader es ±185° para que el target (±180°) nunca
   quede sobre el tope.
-- La inercia de los eslabones de cable está inflada a (150, 800, 150) kg·m².
-  Con la real (Iyy ≈ 3 contra ≈ 1800 del spreader) el solver no transmite el
+- La inercia de los eslabones de cable está inflada a (600, 3200, 600) kg·m².
+  Con la real (Iyy ≈ 10 contra ≈ 7000 del spreader) el solver no transmite el
   torque y el spreader gira flojo y oscila.
-- El target llega a la velocidad máxima con una rampa de 0,8 s, para no darle
-  latigazos al cable.
+- El target llega a la velocidad máxima con la rampa de cada eje (tabla de
+  arriba), para no darle latigazos al cable.
 
 ### Unidades (verificar en Unity 6.3)
 

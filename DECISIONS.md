@@ -4,6 +4,7 @@ Registro corto de decisiones de diseño y técnicas. La más nueva va arriba.
 
 | Fecha | Tema | Decisión | Motivo |
 |---|---|---|---|
+| 2026-10-22 | Balanceo | Masas más altas, rampas de 1 a 2,5 s, damping 15 en cables, frenado antes de los topes | Pedido de Mateo: la grúa se movía demasiado; ahora frena con 4-6° |
 | 2026-10-22 | Cámaras | Tres cámaras: externa, cabina POV y vertical en el carro | Pedido de Mateo: POV real del operador y vista para alinear el spreader |
 | 2026-10-22 | Cabina | Interior modelado (vidrios, consolas, asiento) con la cámara en la cabeza | Referencia de una cabina STS real |
 | 2026-10-22 | Pórtico | Vigas transversales arriba del carro | La cabina colgada chocaba con las vigas a la altura de los rieles del carro |
@@ -16,7 +17,7 @@ Registro corto de decisiones de diseño y técnicas. La más nueva va arriba.
 | 2026-10-22 | Itch.io | Mateo crea la página; Claude prepara el build y los pasos | Claude no crea cuentas ni páginas |
 | 2026-10-22 | Visual | Primitivas URP, paleta de puerto (grúa roja/blanca) | Rápido y liviano para WebGL |
 | 2026-10-22 | Física | 50 Hz; subir solverIterations antes que el timestep | Lo más barato en WebGL |
-| 2026-10-22 | Masas | Escaladas: 2000/1000/500/200/200/500 kg; contenedor 800, caja 150 | Masas parecidas entre vecinos, estable |
+| 2026-10-22 | Masas | Escaladas: 3000/2000/1500/800/800/2000 kg (antes 2000/1000/500/200/200/500); contenedor 800, caja 150 | Masas parecidas entre vecinos; el conjunto que sostiene la carga pesa más |
 | 2026-10-22 | Tests | Sin tests automáticos; checklist manual | Entrega al día siguiente |
 | 2026-10-22 | Escena | Generada por script de editor (`Supercrane → Build Scene`) | Reproducible; evita editar YAML y conflictos con el editor |
 | 2026-10-22 | Código | Un asmdef de runtime y uno de Editor | Prolijo sin complicar |
