@@ -52,7 +52,7 @@ Main
 │  ├─ Quay            (muelle)
 │  ├─ Water
 │  ├─ Ship            (estático, con colliders)
-│  └─ StackZone
+│  └─ StackZone       (volumen lógico + pintura en el piso)
 ├─ --- Crane ---
 │  └─ Base → Gantry → Trolley → Hoist → CableUpper → CableLower → Spreader
 │     (Cabin con CabinCamera y CraneCamera son hijas de Trolley)
@@ -92,11 +92,11 @@ queda con escala (1,1,1).
 | `HoldButton` | Input | Botón de UI que informa si está presionado |
 | ✅ `CameraSwitcher` | Cameras | Recorre externa → cabina → grúa con C y con botón; muestra el nombre |
 | `OrbitCamera` | Cameras | Órbita con clic derecho y zoom con rueda |
-| `Load` | Gameplay | Marca una carga (contenedor o caja) y su estado |
-| `SpreaderGrabber` | Gameplay | Detecta carga válida, crea y destruye el FixedJoint |
-| `StackZone` | Gameplay | Cuenta cargas sueltas y quietas dentro de la zona |
+| ✅ `Load` | Gameplay | Marca una carga (contenedor o caja) y su estado |
+| ✅ `SpreaderGrabber` | Gameplay | Detecta carga válida, crea y destruye el FixedJoint |
+| ✅ `StackZone` | Gameplay | Cuenta cargas sueltas y quietas dentro de la zona |
 | ✅ `JointTelemetryView` | UI | Tabla de target y valor real por joint |
-| `StackCounterView` | UI | Muestra `Apiladas: N / total` |
+| ✅ `StackCounterView` | UI | Muestra `Apiladas: N / total` y el estado del spreader |
 | `PauseMenu` | UI | Pausa con P, paneles de configuración y controles |
 | `SettingsView` | UI | Toggles y sliders de configuración |
 | `GameSettings` | Settings | Valores de config, carga y guarda con PlayerPrefs, avisa cambios |

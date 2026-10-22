@@ -34,8 +34,8 @@ Ejes del mundo:
 | Recorrido del carro | 2 a 20 m (≈2-10 m sobre muelle, ≈10-20 m sobre el barco) |
 | Recorrido del izaje | 0 a 12 m |
 | Eslabones de cable | ~1 m cada uno |
-| Contenedor 20' | 6,1 × 2,6 × 2,4 m |
-| Caja | ~1,5 m de lado |
+| Contenedor 20' | 6,1 × 2,6 × 2,44 m (largo × alto × ancho) |
+| Caja | 1,5 m de lado |
 
 ## 3. Árbol de Articulation Bodies
 
@@ -131,16 +131,22 @@ Las velocidades se pueden cambiar desde Configuración.
 ## 5. Enganche (spreader)
 
 - Tecla **Espacio** (o botón de UI) alterna enganchar/soltar.
-- Solo engancha si hay una carga **debajo y cerca** del spreader y su
-  orientación está dentro de **±15°** de la del spreader (módulo 180°).
-- Al enganchar se crea un `FixedJoint` entre el spreader y la carga; al
-  soltar se destruye.
-- Indicador visual en el spreader: rojo (nada), amarillo (carga válida
-  debajo), verde (enganchado).
+- Solo engancha si hay una carga **debajo y cerca** del spreader (hasta 1 m
+  por debajo del marco, dentro de su planta) y su orientación está dentro de
+  **±15°** de la del spreader: módulo 180° para contenedores y 90° para cajas,
+  que son cuadradas.
+- Si hay varias, engancha la más centrada.
+- Al enganchar se crea un `FixedJoint` en la carga conectado al
+  ArticulationBody del spreader; al soltar se destruye.
+- Indicador: luces en las cuatro esquinas del spreader, rojo (nada),
+  amarillo (carga lista) y verde (enganchado). El HUD muestra el mismo estado
+  en texto.
 
 ## 6. Zona de apilado
 
-- Volumen marcado en el muelle (trigger + decal o quad de color).
+- Volumen de 14 × 5 m en el muelle, centrado en (−5, 0, 4,7), al alcance del
+  carro y del pórtico. Pintado con borde amarillo; el volumen es lógico (no
+  hay collider ni trigger).
 - Una carga **cuenta** si su centro está dentro del volumen, no está
   enganchada y su velocidad es casi 0 durante 1 s.
 - Contador `Apiladas: N / 8` en pantalla.

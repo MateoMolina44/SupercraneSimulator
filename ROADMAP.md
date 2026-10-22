@@ -32,9 +32,9 @@ Orden de recortes en [DESIGN.md](DESIGN.md#11-recortes-si-falta-tiempo).
 
 ## Hito 3 — Tarea (viernes temprano)
 
-- [ ] Barco estático con 4 contenedores y 4 cajas
-- [ ] `SpreaderGrabber` (cerca + alineado ±15°) e indicador de color
-- [ ] `StackZone` y contador `Apiladas: N / 8`
+- [x] Barco estático con 4 contenedores y 4 cajas
+- [x] `SpreaderGrabber` (cerca + alineado ±15°) e indicador de color
+- [x] `StackZone` y contador `Apiladas: N / 8`
 
 ## Hito 4 — Cámaras y UI (viernes)
 
