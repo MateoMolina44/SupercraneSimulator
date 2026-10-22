@@ -1,0 +1,482 @@
+using SupercraneSimulator.Cameras;
+using SupercraneSimulator.Crane;
+using SupercraneSimulator.Input;
+using SupercraneSimulator.UI;
+using UnityEditor;
+using UnityEditor.Events;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.InputSystem.UI;
+using UnityEngine.UI;
+
+namespace SupercraneSimulator.Editor.SceneBuilder
+{
+    /// <summary>
+    /// Genera la escena Main completa con las medidas de DESIGN.md.
+    /// Todos los transforms quedan con escala (1,1,1): el tamaño está en las mallas.
+    /// </summary>
+    public static class SceneBuilder
+    {
+        private const string ScenePath = "Assets/_Project/Scenes/Main.unity";
+
+        // Medidas en metros (DESIGN.md, sección 2).
+        private const float LandRailZ = -12f;
+        private const float SeaRailZ = 8f;
+        private const float LegHalfSpanX = 6f;
+        private const float RailTopY = 0.2f;
+        private const float GirderTopY = 16.2f;
+        private const float QuayEdgeZ = 10f;
+        private const float WaterY = -2f;
+        private const float DeckY = 1f;
+
+        private const float HoistTopY = GirderTopY - 0.7f;
+
+        // Posición inicial de cada joint (dentro del rango).
+        private const float GantryStart = 0f;
+        private const float TrolleyStart = 6f;
+        private const float HoistStart = 3f;
+
+        private static Materials _materials;
+
+        [MenuItem("Supercrane/Build Scene")]
+        public static void Build()
+        {
+            if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
+            {
+                return;
+            }
+
+            BuilderAssets.ClearCache();
+            _materials = new Materials();
+
+            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+
+            var environment = Group("--- Environment ---");
+            BuildEnvironment(environment);
+
+            Group("--- Crane ---");
+            var crane = BuildCrane();
+
+            var systems = Group("--- Systems ---");
+            var input = new GameObject("CraneInput").AddComponent<CraneInput>();
+            input.transform.SetParent(systems, false);
+            var controller = new GameObject("CraneController").AddComponent<CraneController>();
+            controller.transform.SetParent(systems, false);
+            controller.Configure(input, crane.Gantry, crane.Trolley, crane.Hoist, crane.Spreader);
+
+            var cameras = Group("--- Cameras ---");
+            var external = BuildExternalCamera(cameras);
+            var switcher = new GameObject("CameraSwitcher").AddComponent<CameraSwitcher>();
+            switcher.transform.SetParent(cameras, false);
+            switcher.Configure(input, crane.CabinCamera, external);
+
+            var ui = Group("--- UI ---");
+            BuildUi(ui, controller, switcher);
+
+            EditorSceneManager.SaveScene(scene, ScenePath);
+            EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(ScenePath, true) };
+            AssetDatabase.SaveAssets();
+            Debug.Log($"[Supercrane] Escena generada en {ScenePath}");
+        }
+
+        // ---------------------------------------------------------------- Entorno
+
+        private static void BuildEnvironment(Transform parent)
+        {
+            var light = new GameObject("Directional Light").AddComponent<Light>();
+            light.transform.SetParent(parent, false);
+            light.type = LightType.Directional;
+            light.intensity = 1.2f;
+            light.shadows = LightShadows.Soft;
+            light.transform.rotation = Quaternion.Euler(50f, -35f, 0f);
+
+            RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
+            RenderSettings.ambientSkyColor = new Color(0.62f, 0.7f, 0.8f);
+            RenderSettings.ambientEquatorColor = new Color(0.45f, 0.48f, 0.5f);
+            RenderSettings.ambientGroundColor = new Color(0.25f, 0.25f, 0.25f);
+
+            // Muelle: la parte de arriba queda en y = 0 y el borde con el agua en z = QuayEdgeZ.
+            const float quayDepth = 4f;
+            const float quayWidthZ = 50f;
+            Box(parent, "Quay", new Vector3(0f, -quayDepth / 2f, QuayEdgeZ - quayWidthZ / 2f),
+                new Vector3(100f, quayDepth, quayWidthZ), _materials.Concrete);
+
+            Box(parent, "Water", new Vector3(0f, WaterY - 0.05f, 60f), new Vector3(200f, 0.1f, 100f), _materials.Water, false);
+
+            BuildShip(parent);
+        }
+
+        private static void BuildShip(Transform parent)
+        {
+            var ship = new GameObject("Ship").transform;
+            ship.SetParent(parent, false);
+
+            // Casco: cubierta en y = DeckY, entre z = 11 y z = 23.
+            const float hullBottom = -4f;
+            var hullHeight = DeckY - hullBottom;
+            Box(ship, "Hull", new Vector3(0f, hullBottom + hullHeight / 2f, 17f), new Vector3(60f, hullHeight, 12f), _materials.Hull);
+            Box(ship, "Bridge", new Vector3(24f, DeckY + 5f, 17f), new Vector3(7f, 10f, 11f), _materials.White);
+            Box(ship, "BridgeWindows", new Vector3(24f, DeckY + 8.5f, 11.45f), new Vector3(6f, 1.2f, 0.1f), _materials.Glass, false);
+        }
+
+        // ---------------------------------------------------------------- Grúa
+
+        private struct CraneParts
+        {
+            public DrivenJoint Gantry;
+            public DrivenJoint Trolley;
+            public DrivenJoint Hoist;
+            public DrivenJoint Spreader;
+            public Camera CabinCamera;
+        }
+
+        private static CraneParts BuildCrane()
+        {
+            var parts = new CraneParts();
+
+            // 1. Base: raíz inmóvil con los rieles.
+            var baseBody = Body("Base", null, Vector3.zero, 1000f);
+            baseBody.immovable = true;
+            Box(baseBody.transform, "Rail_Land", new Vector3(0f, RailTopY / 2f, LandRailZ), new Vector3(70f, RailTopY, 0.4f), _materials.Steel);
+            Box(baseBody.transform, "Rail_Sea", new Vector3(0f, RailTopY / 2f, SeaRailZ), new Vector3(70f, RailTopY, 0.4f), _materials.Steel);
+
+            // Cada joint se arma en una posición dentro de su rango (nunca en un límite: PhysX
+            // lo empuja de golpe hacia adentro). jointPosition vale 0 ahí; el offset de
+            // DrivenJoint lo traduce a la medida real que se muestra.
+
+            // 2. Pórtico: Prismatic sobre los rieles (eje X del mundo).
+            var gantry = Body("Gantry", baseBody.transform, new Vector3(GantryStart, 0f, 0f), 2000f);
+            parts.Gantry = DrivenPrismatic(gantry, Quaternion.identity, "Pórtico", -15f, 15f, GantryStart, 3f, 200f, 30f);
+            BuildGantryVisuals(gantry.transform);
+
+            // 3. Carro: Prismatic a lo largo de la viga (eje Z).
+            var trolley = Body("Trolley", gantry.transform, new Vector3(GantryStart, GirderTopY, TrolleyStart), 1000f);
+            parts.Trolley = DrivenPrismatic(trolley, Quaternion.Euler(0f, -90f, 0f), "Carro", 2f, 20f, TrolleyStart, 3f, 200f, 30f);
+            Box(trolley.transform, "TrolleyFrame", new Vector3(0f, 0.5f, 0f), new Vector3(4f, 1f, 3f), _materials.CraneRed, false);
+            parts.CabinCamera = BuildCabin(trolley.transform);
+            SetBoxInertia(trolley, new Vector3(4f, 1f, 3f), new Vector3(0f, 0.5f, 0f));
+
+            // 4. Izaje: Prismatic vertical hacia abajo. 0 m es el gancho arriba de todo.
+            var hoistPosition = new Vector3(GantryStart, HoistTopY - HoistStart, TrolleyStart);
+            var hoist = Body("Hoist", trolley.transform, hoistPosition, 500f);
+            parts.Hoist = DrivenPrismatic(hoist, Quaternion.Euler(0f, 0f, -90f), "Izaje", 0f, 12f, HoistStart, 2f, 400f, 40f);
+            Box(hoist.transform, "HeadBlock", Vector3.zero, new Vector3(1.4f, 0.6f, 1.4f), _materials.Yellow, false);
+            SetBoxInertia(hoist, new Vector3(1.4f, 0.6f, 1.4f), Vector3.zero);
+            BuildRopes(trolley.transform, hoist.transform);
+
+            // 5-6. Cable: dos eslabones Spherical pasivos de 1 m.
+            var cableUpper = CableLink("CableUpper", hoist.transform, hoistPosition + new Vector3(0f, -0.3f, 0f));
+            var cableLower = CableLink("CableLower", cableUpper.transform, cableUpper.transform.position + Vector3.down);
+
+            // 7. Spreader: Revolute en Y, ±180°.
+            var spreader = Body("Spreader", cableLower.transform, cableLower.transform.position + Vector3.down, 500f);
+            spreader.jointType = ArticulationJointType.RevoluteJoint;
+            spreader.anchorRotation = Quaternion.Euler(0f, 0f, 90f);
+            spreader.twistLock = ArticulationDofLock.LimitedMotion;
+            // El límite físico pasa apenas de ±180° para que el target nunca quede sobre el tope.
+            spreader.xDrive = Drive(-185f, 185f, 0f, 400f, 40f);
+            Box(spreader.transform, "SpreaderFrame", new Vector3(0f, -0.25f, 0f), new Vector3(6.1f, 0.5f, 2.5f), _materials.Yellow);
+            parts.Spreader = Driven(spreader, "Spreader", -180f, 180f, 0f, 0f, 45f);
+
+            foreach (var body in new[] { gantry, trolley, hoist, cableUpper, cableLower, spreader })
+            {
+                MatchParentAnchor(body);
+            }
+
+            return parts;
+        }
+
+        private static void BuildGantryVisuals(Transform gantry)
+        {
+            var legHeight = GirderTopY - 1f - RailTopY;
+            var legCenterY = RailTopY + legHeight / 2f;
+            var legSize = new Vector3(1f, legHeight, 1f);
+            foreach (var z in new[] { LandRailZ, SeaRailZ })
+            {
+                Box(gantry, $"Leg_L_{z}", new Vector3(-LegHalfSpanX, legCenterY, z), legSize, _materials.CraneRed);
+                Box(gantry, $"Leg_R_{z}", new Vector3(LegHalfSpanX, legCenterY, z), legSize, _materials.CraneRed);
+                Box(gantry, $"CrossBeam_{z}", new Vector3(0f, GirderTopY - 1.5f, z), new Vector3(LegHalfSpanX * 2f + 1f, 1f, 1f), _materials.CraneRed);
+                Box(gantry, $"LowerBeam_{z}", new Vector3(0f, 6f, z), new Vector3(LegHalfSpanX * 2f, 0.7f, 0.7f), _materials.White);
+            }
+
+            // Vigas por donde corre el carro: del lado tierra (backreach) hasta la punta de la pluma.
+            const float girderStartZ = -16f;
+            const float girderEndZ = 25f;
+            var girderLength = girderEndZ - girderStartZ;
+            var girderCenterZ = (girderStartZ + girderEndZ) / 2f;
+            foreach (var x in new[] { -1.8f, 1.8f })
+            {
+                Box(gantry, $"Girder_{x}", new Vector3(x, GirderTopY - 0.5f, girderCenterZ), new Vector3(0.6f, 1f, girderLength), _materials.White);
+            }
+
+            Box(gantry, "MachineryHouse", new Vector3(0f, GirderTopY + 1.5f, -14f), new Vector3(6f, 3f, 4f), _materials.White);
+        }
+
+        private static Camera BuildCabin(Transform trolley)
+        {
+            // Cabina colgada del carro, a un costado para no tapar el cable.
+            var cabinPosition = new Vector3(2.8f, -1.4f, 0.5f);
+            Box(trolley, "Cabin", cabinPosition, new Vector3(1.8f, 2f, 2.2f), _materials.White, false);
+            Box(trolley, "CabinWindow", cabinPosition + new Vector3(0f, -0.2f, 1.11f), new Vector3(1.5f, 1.2f, 0.05f), _materials.Glass, false);
+
+            var camera = new GameObject("CabinCamera").AddComponent<Camera>();
+            camera.transform.SetParent(trolley, false);
+            camera.transform.localPosition = cabinPosition + new Vector3(0f, -0.3f, 0.9f);
+            camera.transform.localRotation = Quaternion.Euler(55f, -12f, 0f);
+            camera.nearClipPlane = 0.1f;
+            camera.fieldOfView = 70f;
+            camera.gameObject.AddComponent<AudioListener>();
+            return camera;
+        }
+
+        private static void BuildRopes(Transform trolley, Transform hoist)
+        {
+            foreach (var x in new[] { -0.5f, 0.5f })
+            {
+                var from = new GameObject($"RopeAnchor_{x}").transform;
+                from.SetParent(trolley, false);
+                from.localPosition = new Vector3(x, 0f, 0f);
+
+                var to = new GameObject($"RopeEnd_{x}").transform;
+                to.SetParent(hoist, false);
+                to.localPosition = new Vector3(x, 0.3f, 0f);
+
+                var line = from.gameObject.AddComponent<LineRenderer>();
+                line.widthMultiplier = 0.06f;
+                line.sharedMaterial = _materials.Steel;
+                line.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                from.gameObject.AddComponent<RopeLine>().Configure(from, to);
+            }
+        }
+
+        private static ArticulationBody CableLink(string name, Transform parent, Vector3 pivot)
+        {
+            var link = Body(name, parent, pivot, 200f);
+            link.jointType = ArticulationJointType.SphericalJoint;
+            // El eje de twist (X del ancla) apunta a lo largo del cable.
+            link.anchorRotation = Quaternion.Euler(0f, 0f, 90f);
+            link.twistLock = ArticulationDofLock.LockedMotion;
+            link.swingYLock = ArticulationDofLock.LimitedMotion;
+            link.swingZLock = ArticulationDofLock.LimitedMotion;
+            // Pasivo: sin rigidez ni target, solo un poco de amortiguación.
+            link.yDrive = Drive(-45f, 45f, 0f, 0f, 0.5f);
+            link.zDrive = Drive(-45f, 45f, 0f, 0f, 0.5f);
+            Shape(link.transform, "Wire", BuilderAssets.Cylinder(0.08f, 1f), new Vector3(0f, -0.5f, 0f), _materials.Steel);
+            // Inercia inflada a propósito: con la real (Iyy ≈ 3) el solver no transmite el torque
+            // del spreader (Iyy ≈ 1800) y el giro queda flojo y oscila.
+            link.automaticCenterOfMass = false;
+            link.centerOfMass = new Vector3(0f, -0.5f, 0f);
+            link.automaticInertiaTensor = false;
+            link.inertiaTensor = new Vector3(150f, 800f, 150f);
+            link.inertiaTensorRotation = Quaternion.identity;
+            return link;
+        }
+
+        // ---------------------------------------------------------------- Cámaras y UI
+
+        private static Camera BuildExternalCamera(Transform parent)
+        {
+            var camera = new GameObject("ExternalCamera").AddComponent<Camera>();
+            camera.transform.SetParent(parent, false);
+            camera.transform.position = new Vector3(-38f, 22f, -26f);
+            camera.transform.LookAt(new Vector3(0f, 7f, 5f));
+            camera.fieldOfView = 55f;
+            camera.farClipPlane = 500f;
+            camera.tag = "MainCamera";
+            camera.gameObject.AddComponent<AudioListener>();
+            return camera;
+        }
+
+        private static void BuildUi(Transform parent, CraneController controller, CameraSwitcher switcher)
+        {
+            var eventSystem = new GameObject("EventSystem", typeof(EventSystem), typeof(InputSystemUIInputModule));
+            eventSystem.transform.SetParent(parent, false);
+
+            var canvasObject = new GameObject("HUD", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
+            canvasObject.transform.SetParent(parent, false);
+            canvasObject.GetComponent<Canvas>().renderMode = RenderMode.ScreenSpaceOverlay;
+            var scaler = canvasObject.GetComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1280f, 720f);
+            scaler.matchWidthOrHeight = 0.5f;
+            var canvas = canvasObject.transform;
+
+            // Telemetría: esquina superior izquierda.
+            var panel = Panel(canvas, "Telemetry", new Vector2(0f, 1f), new Vector2(16f, -16f), new Vector2(330f, 120f));
+            var labels = Label(panel, "Labels", new Vector2(10f, -8f), new Vector2(110f, 104f), TextAnchor.UpperLeft);
+            var targets = Label(panel, "Targets", new Vector2(120f, -8f), new Vector2(100f, 104f), TextAnchor.UpperRight);
+            var actuals = Label(panel, "Actuals", new Vector2(220f, -8f), new Vector2(100f, 104f), TextAnchor.UpperRight);
+            panel.gameObject.AddComponent<JointTelemetryView>().Configure(controller, labels, targets, actuals);
+
+            // Botón de cámara: esquina superior derecha.
+            var buttonRect = Panel(canvas, "CameraButton", new Vector2(1f, 1f), new Vector2(-16f, -16f), new Vector2(150f, 44f));
+            var button = buttonRect.gameObject.AddComponent<Button>();
+            button.targetGraphic = buttonRect.GetComponent<Image>();
+            var buttonLabel = Label(buttonRect, "Text", Vector2.zero, new Vector2(150f, 44f), TextAnchor.MiddleCenter);
+            buttonLabel.text = "Cámara (C)";
+            UnityEventTools.AddPersistentListener(button.onClick, switcher.Toggle);
+        }
+
+        private static RectTransform Panel(Transform parent, string name, Vector2 anchor, Vector2 position, Vector2 size)
+        {
+            var go = new GameObject(name, typeof(RectTransform), typeof(Image));
+            go.transform.SetParent(parent, false);
+            var rect = (RectTransform)go.transform;
+            rect.anchorMin = anchor;
+            rect.anchorMax = anchor;
+            rect.pivot = anchor;
+            rect.anchoredPosition = position;
+            rect.sizeDelta = size;
+            go.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0.6f);
+            return rect;
+        }
+
+        private static Text Label(Transform parent, string name, Vector2 position, Vector2 size, TextAnchor alignment)
+        {
+            var go = new GameObject(name, typeof(RectTransform), typeof(Text));
+            go.transform.SetParent(parent, false);
+            var rect = (RectTransform)go.transform;
+            var centered = alignment == TextAnchor.MiddleCenter;
+            rect.anchorMin = rect.anchorMax = rect.pivot = centered ? new Vector2(0.5f, 0.5f) : new Vector2(0f, 1f);
+            rect.anchoredPosition = position;
+            rect.sizeDelta = size;
+
+            var text = go.GetComponent<Text>();
+            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            text.fontSize = 17;
+            text.lineSpacing = 1.1f;
+            text.color = Color.white;
+            text.alignment = alignment;
+            text.supportRichText = true;
+            text.raycastTarget = false;
+            return text;
+        }
+
+        // ---------------------------------------------------------------- Helpers de física
+
+        private static ArticulationBody Body(string name, Transform parent, Vector3 worldPosition, float mass)
+        {
+            var go = new GameObject(name);
+            if (parent != null)
+            {
+                go.transform.SetParent(parent, false);
+            }
+
+            go.transform.position = worldPosition;
+            var body = go.AddComponent<ArticulationBody>();
+            body.mass = mass;
+            body.solverIterations = 16;
+            body.solverVelocityIterations = 4;
+            return body;
+        }
+
+        /// <summary>
+        /// Prismatic con drive. <paramref name="min"/>, <paramref name="max"/> y <paramref name="start"/>
+        /// están en la medida real; los límites físicos se corren para que start sea jointPosition 0.
+        /// </summary>
+        private static DrivenJoint DrivenPrismatic(ArticulationBody body, Quaternion axisRotation, string label,
+            float min, float max, float start, float speed, float stiffness, float damping)
+        {
+            body.jointType = ArticulationJointType.PrismaticJoint;
+            body.anchorRotation = axisRotation;
+            body.linearLockX = ArticulationDofLock.LimitedMotion;
+            body.linearLockY = ArticulationDofLock.LockedMotion;
+            body.linearLockZ = ArticulationDofLock.LockedMotion;
+            body.xDrive = Drive(min - start, max - start, 0f, stiffness, damping);
+            return Driven(body, label, min, max, start, start, speed);
+        }
+
+        /// <summary>
+        /// Drive en modo Acceleration: no depende de la masa que cuelga, así que los mismos
+        /// valores sirven con o sin carga enganchada.
+        /// </summary>
+        private static ArticulationDrive Drive(float lower, float upper, float target, float stiffness, float damping)
+        {
+            return new ArticulationDrive
+            {
+                driveType = ArticulationDriveType.Acceleration,
+                lowerLimit = lower,
+                upperLimit = upper,
+                target = target,
+                stiffness = stiffness,
+                damping = damping,
+                forceLimit = float.MaxValue
+            };
+        }
+
+        private static DrivenJoint Driven(ArticulationBody body, string label, float min, float max, float initial, float offset, float speed)
+        {
+            var joint = body.gameObject.AddComponent<DrivenJoint>();
+            joint.Configure(label, min, max, initial, offset, speed);
+            return joint;
+        }
+
+        /// <summary>
+        /// Pone el ancla del padre en el mismo lugar que el ancla propia. Se hace a mano porque
+        /// matchAnchors no la recalcula cuando el cuerpo se arma por código.
+        /// </summary>
+        private static void MatchParentAnchor(ArticulationBody body)
+        {
+            var self = body.transform;
+            var parent = self.parent;
+            body.matchAnchors = false;
+            body.parentAnchorPosition = parent.InverseTransformPoint(self.TransformPoint(body.anchorPosition));
+            body.parentAnchorRotation = Quaternion.Inverse(parent.rotation) * self.rotation * body.anchorRotation;
+        }
+
+        /// <summary>Inercia de caja para cuerpos sin collider (si no, Unity usa un valor por defecto).</summary>
+        private static void SetBoxInertia(ArticulationBody body, Vector3 size, Vector3 centerOfMass)
+        {
+            var m = body.mass / 12f;
+            body.automaticCenterOfMass = false;
+            body.centerOfMass = centerOfMass;
+            body.automaticInertiaTensor = false;
+            body.inertiaTensor = new Vector3(
+                m * (size.y * size.y + size.z * size.z),
+                m * (size.x * size.x + size.z * size.z),
+                m * (size.x * size.x + size.y * size.y));
+            body.inertiaTensorRotation = Quaternion.identity;
+        }
+
+        // ---------------------------------------------------------------- Helpers de geometría
+
+        private static Transform Group(string name)
+        {
+            return new GameObject(name).transform;
+        }
+
+        private static GameObject Box(Transform parent, string name, Vector3 localPosition, Vector3 size, Material material, bool collider = true)
+        {
+            var go = Shape(parent, name, BuilderAssets.Box(size), localPosition, material);
+            if (collider)
+            {
+                go.AddComponent<BoxCollider>().size = size;
+            }
+
+            return go;
+        }
+
+        private static GameObject Shape(Transform parent, string name, Mesh mesh, Vector3 localPosition, Material material)
+        {
+            var go = new GameObject(name, typeof(MeshFilter), typeof(MeshRenderer));
+            go.transform.SetParent(parent, false);
+            go.transform.localPosition = localPosition;
+            go.GetComponent<MeshFilter>().sharedMesh = mesh;
+            go.GetComponent<MeshRenderer>().sharedMaterial = material;
+            return go;
+        }
+
+        private sealed class Materials
+        {
+            public readonly Material CraneRed = BuilderAssets.Material("CraneRed", new Color(0.75f, 0.12f, 0.1f));
+            public readonly Material White = BuilderAssets.Material("CraneWhite", new Color(0.92f, 0.92f, 0.9f));
+            public readonly Material Yellow = BuilderAssets.Material("SpreaderYellow", new Color(0.95f, 0.75f, 0.1f));
+            public readonly Material Steel = BuilderAssets.Material("Steel", new Color(0.35f, 0.36f, 0.38f), 0.6f, 0.8f);
+            public readonly Material Concrete = BuilderAssets.Material("Concrete", new Color(0.55f, 0.55f, 0.53f), 0.1f);
+            public readonly Material Water = BuilderAssets.Material("Water", new Color(0.12f, 0.3f, 0.45f), 0.9f);
+            public readonly Material Hull = BuilderAssets.Material("ShipHull", new Color(0.15f, 0.18f, 0.22f));
+            public readonly Material Glass = BuilderAssets.Material("Glass", new Color(0.3f, 0.45f, 0.55f), 0.95f);
+        }
+    }
+}
