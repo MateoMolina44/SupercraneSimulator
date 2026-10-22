@@ -37,7 +37,8 @@ Orden de recortes en [DESIGN.md](DESIGN.md#11-recortes-si-falta-tiempo).
 
 ## Hito 4 — Cámaras y UI (viernes)
 
-- [x] Cámara de cabina en el carro
+- [x] Cámara de cabina en el carro (POV con interior)
+- [x] Cámara vertical de la grúa
 - [ ] Cámara orbital
 - [x] Cambio con C y con botón
 - [ ] Controles en pantalla (botones mantener-presionado)

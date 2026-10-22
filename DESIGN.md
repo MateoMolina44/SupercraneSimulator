@@ -8,7 +8,8 @@ contradice, manda CLAUDE.md. Las decisiones y su motivo están en
 ## 1. Experiencia
 
 - El jugador opera una **grúa pórtico portuaria STS** sobre rieles en un
-  muelle, desde la cabina (colgada del carro) o desde una cámara orbital.
+  muelle, desde la cabina (colgada del carro), desde una cámara vertical en
+  el carro o desde una cámara externa.
 - Junto al muelle hay un **barco estático** con 4 contenedores y 4 cajas en
   cubierta.
 - La tarea es engancharlos con el **spreader** y apilarlos en la **zona
@@ -140,11 +141,26 @@ Las velocidades se pueden cambiar desde Configuración.
 
 ## 7. Cámaras
 
-- **Cabina:** hija del carro, mira hacia abajo y adelante. Se mueve con el
-  carro y el pórtico.
-- **Externa:** orbital alrededor de la grúa. Clic derecho y arrastrar para
-  orbitar, rueda para zoom.
-- Cambio con la tecla **C** y con un botón de UI.
+Tres cámaras, en este orden al apretar **C** o el botón de UI (el botón
+muestra el nombre de la activa):
+
+1. **Externa:** vista general del muelle. Pendiente: que sea orbital (clic
+   derecho y arrastrar para orbitar, rueda para zoom).
+2. **Cabina (POV):** el operador sentado en la cabina, a la altura de la
+   cabeza, mirando hacia abajo por el piso de vidrio. Se ven las consolas
+   con joysticks a los costados, el marco de la cabina y el spreader abajo.
+3. **Grúa:** cámara colgada del carro mirando derecho hacia abajo, para
+   alinear el spreader con la carga.
+
+### Cabina
+
+- Cuelga del carro del lado del mar (z +0,9 a +3,5 m respecto del carro),
+  para no chocar con el bloque del izaje.
+- Mide 2,4 × 2,4 × 2,6 m. Marco verde agua, vidrios transparentes en el piso
+  y en las cuatro caras, tablero y armario detrás del operador.
+- El asiento queda detrás de la cámara para no tapar el piso.
+- Las vigas transversales del pórtico van por encima del carro (y ≈ 18,5 m)
+  para que la cabina pase entre las patas.
 
 ## 8. UI (uGUI)
 

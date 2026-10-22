@@ -55,7 +55,7 @@ Main
 │  └─ StackZone
 ├─ --- Crane ---
 │  └─ Base → Gantry → Trolley → Hoist → CableUpper → CableLower → Spreader
-│     (CabinCamera es hija de Trolley)
+│     (Cabin con CabinCamera y CraneCamera son hijas de Trolley)
 ├─ --- Systems ---
 │  ├─ CraneInput
 │  └─ CraneController
@@ -63,7 +63,8 @@ Main
 │  ├─ Container_01 … _04
 │  └─ Crate_01 … _04
 ├─ --- Cameras ---
-│  └─ OrbitCamera
+│  ├─ ExternalCamera   (pasará a OrbitCamera)
+│  └─ CameraSwitcher
 └─ --- UI ---
    ├─ HUD Canvas      (telemetría, contador, botón cámara, controles)
    ├─ Pause Canvas    (pausa y configuración)
@@ -88,7 +89,7 @@ queda con escala (1,1,1).
 | ✅ `CraneAxis` | Input | Enum de los 4 ejes |
 | ✅ `CraneInput` | Input | Acciones del Input System creadas en código, combinadas con los botones de UI |
 | `HoldButton` | Input | Botón de UI que informa si está presionado |
-| ✅ `CameraSwitcher` | Cameras | Alterna cabina/externa con C y con botón |
+| ✅ `CameraSwitcher` | Cameras | Recorre externa → cabina → grúa con C y con botón; muestra el nombre |
 | `OrbitCamera` | Cameras | Órbita con clic derecho y zoom con rueda |
 | `Load` | Gameplay | Marca una carga (contenedor o caja) y su estado |
 | `SpreaderGrabber` | Gameplay | Detecta carga válida, crea y destruye el FixedJoint |

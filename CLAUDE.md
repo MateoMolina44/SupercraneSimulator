@@ -7,8 +7,8 @@ Unity 6.3 LTS. Entrega: viernes 23/10. Debe funcionar en build WebGL (itch.io).
 Grúa pórtico portuaria (STS, ship-to-shore) sobre rieles en un muelle.
 Tarea: descargar cajas y contenedores (Rigidbodies comunes) de un barco
 estático con el spreader y apilarlos en una zona marcada del muelle.
-Dos cámaras (cabina y externa orbital), con cambio entre ellas por
-tecla C y botón de UI.
+Tres cámaras (externa, cabina POV y vertical de la grúa), con cambio
+entre ellas por tecla C y botón de UI.
 
 ## Árbol de Articulation Bodies (7 cuerpos, NO agregar más)
 1. Base: raíz, immovable (rieles del muelle)

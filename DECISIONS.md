@@ -4,6 +4,9 @@ Registro corto de decisiones de diseño y técnicas. La más nueva va arriba.
 
 | Fecha | Tema | Decisión | Motivo |
 |---|---|---|---|
+| 2026-10-22 | Cámaras | Tres cámaras: externa, cabina POV y vertical en el carro | Pedido de Mateo: POV real del operador y vista para alinear el spreader |
+| 2026-10-22 | Cabina | Interior modelado (vidrios, consolas, asiento) con la cámara en la cabeza | Referencia de una cabina STS real |
+| 2026-10-22 | Pórtico | Vigas transversales arriba del carro | La cabina colgada chocaba con las vigas a la altura de los rieles del carro |
 | 2026-10-22 | Inercia del cable | Eslabones con inercia (150, 800, 150) | Con la real el spreader gira flojo y oscila (relación 600:1) |
 | 2026-10-22 | Arranque de joints | Ningún joint arranca en su límite; offset en DrivenJoint | En el límite PhysX da un impulso enorme en el primer paso |
 | 2026-10-22 | Drives | Modo Acceleration, con rampa de 0,8 s en el target | Independiente de la carga; menos latigazo en el cable |
