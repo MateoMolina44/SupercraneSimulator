@@ -92,6 +92,7 @@ namespace SupercraneSimulator.Editor.SceneBuilder
 
             var cameras = Group("--- Cameras ---");
             var external = BuildExternalCamera(cameras);
+            external.gameObject.AddComponent<OrbitCamera>().Configure(crane.Gantry.transform, new Vector3(0f, 8f, 4f));
             var switcher = new GameObject("CameraSwitcher").AddComponent<CameraSwitcher>();
             switcher.transform.SetParent(cameras, false);
             var loadsGroup = Group("--- Loads ---");
@@ -99,7 +100,7 @@ namespace SupercraneSimulator.Editor.SceneBuilder
             var zone = BuildStackZone(environment, loads);
 
             var ui = Group("--- UI ---");
-            var cameraLabel = BuildUi(ui, controller, switcher, zone, crane.Grabber);
+            var cameraLabel = BuildUi(ui, input, controller, switcher, zone, crane.Grabber);
             switcher.Configure(input, cameraLabel,
                 new[] { external, crane.CabinCamera, crane.CraneCamera },
                 new[] { "Cámara: Externa (C)", "Cámara: Cabina (C)", "Cámara: Grúa (C)" });
@@ -531,20 +532,13 @@ namespace SupercraneSimulator.Editor.SceneBuilder
         }
 
         /// <summary>Arma el HUD y devuelve el texto del botón de cámara.</summary>
-        private static Text BuildUi(Transform parent, CraneController controller, CameraSwitcher switcher,
+        private static Text BuildUi(Transform parent, CraneInput input, CraneController controller, CameraSwitcher switcher,
             StackZone zone, SpreaderGrabber grabber)
         {
             var eventSystem = new GameObject("EventSystem", typeof(EventSystem), typeof(InputSystemUIInputModule));
             eventSystem.transform.SetParent(parent, false);
 
-            var canvasObject = new GameObject("HUD", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
-            canvasObject.transform.SetParent(parent, false);
-            canvasObject.GetComponent<Canvas>().renderMode = RenderMode.ScreenSpaceOverlay;
-            var scaler = canvasObject.GetComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1280f, 720f);
-            scaler.matchWidthOrHeight = 0.5f;
-            var canvas = canvasObject.transform;
+            var canvas = Canvas(parent, "HUD", 0);
 
             // Telemetría: esquina superior izquierda.
             var panel = Panel(canvas, "Telemetry", new Vector2(0f, 1f), new Vector2(16f, -16f), new Vector2(330f, 120f));
@@ -554,12 +548,10 @@ namespace SupercraneSimulator.Editor.SceneBuilder
             panel.gameObject.AddComponent<JointTelemetryView>().Configure(controller, labels, targets, actuals);
 
             // Botón de cámara: esquina superior derecha.
-            var buttonRect = Panel(canvas, "CameraButton", new Vector2(1f, 1f), new Vector2(-16f, -16f), new Vector2(230f, 44f));
-            var button = buttonRect.gameObject.AddComponent<Button>();
-            button.targetGraphic = buttonRect.GetComponent<Image>();
-            var buttonLabel = Label(buttonRect, "Text", Vector2.zero, new Vector2(230f, 44f), TextAnchor.MiddleCenter);
-            buttonLabel.text = "Cámara (C)";
-            UnityEventTools.AddPersistentListener(button.onClick, switcher.Next);
+            var (cameraButton, buttonLabel) = TextButton(canvas, "CameraButton", new Vector2(1f, 1f), new Vector2(-16f, -16f),
+                new Vector2(230f, 44f), "Cámara (C)");
+            UnityEventTools.AddPersistentListener(cameraButton.onClick, switcher.Next);
+
             // Contador de apiladas y estado del spreader: arriba al centro.
             var counterPanel = Panel(canvas, "StackCounter", new Vector2(0.5f, 1f), new Vector2(0f, -16f), new Vector2(400f, 64f));
             var counter = Label(counterPanel, "Count", new Vector2(0f, 12f), new Vector2(400f, 30f), TextAnchor.MiddleCenter);
@@ -568,7 +560,138 @@ namespace SupercraneSimulator.Editor.SceneBuilder
             spreaderState.fontSize = 15;
             counterPanel.gameObject.AddComponent<StackCounterView>().Configure(zone, grabber, counter, spreaderState);
 
+            BuildOnScreenControls(canvas, input);
+
+            var pauseMenu = BuildPauseMenu(parent, input);
+            var (pauseButton, _) = TextButton(canvas, "PauseButton", new Vector2(1f, 1f), new Vector2(-16f, -68f),
+                new Vector2(230f, 36f), "Pausa (P)", 15);
+            UnityEventTools.AddPersistentListener(pauseButton.onClick, pauseMenu.Toggle);
+
             return buttonLabel;
+        }
+
+        /// <summary>
+        /// Botones en pantalla abajo al centro: dos por eje (actúan mientras se mantienen) y
+        /// el de enganchar. Funcionan con mouse y con touch.
+        /// </summary>
+        private static void BuildOnScreenControls(Transform canvas, CraneInput input)
+        {
+            var panel = Panel(canvas, "OnScreenControls", new Vector2(0.5f, 0f), new Vector2(0f, 16f), new Vector2(960f, 100f));
+            panel.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0.35f);
+
+            var groups = new[]
+            {
+                ("Pórtico", CraneAxis.Gantry, "◄  A", "D  ►"),
+                ("Carro", CraneAxis.Trolley, "S  Tierra", "W  Mar"),
+                ("Izaje", CraneAxis.Hoist, "R  Subir", "F  Bajar"),
+                ("Spreader", CraneAxis.Spreader, "Q  Izq.", "E  Der.")
+            };
+            const float groupWidth = 190f;
+            const float margin = 10f;
+            var bottomLeft = Vector2.zero;
+            for (var i = 0; i < groups.Length; i++)
+            {
+                var (title, axis, negative, positive) = groups[i];
+                var x = margin + i * groupWidth;
+                var titleLabel = Label(panel, $"{axis}Title", new Vector2(x, -6f), new Vector2(180f, 24f), TextAnchor.UpperLeft);
+                titleLabel.text = $"<b>{title}</b>";
+                titleLabel.fontSize = 15;
+
+                var (negativeButton, _) = TextButton(panel, $"{axis}Negative", bottomLeft, new Vector2(x, margin), new Vector2(88f, 56f), negative, 15);
+                negativeButton.gameObject.AddComponent<HoldButton>().Configure(input, axis, -1f);
+                var (positiveButton, _) = TextButton(panel, $"{axis}Positive", bottomLeft, new Vector2(x + 92f, margin), new Vector2(88f, 56f), positive, 15);
+                positiveButton.gameObject.AddComponent<HoldButton>().Configure(input, axis, 1f);
+            }
+
+            var (grabButton, _) = TextButton(panel, "GrabButton", bottomLeft, new Vector2(margin + groups.Length * groupWidth, margin),
+                new Vector2(180f, 80f), "<b>Espacio</b>\nEnganchar / soltar", 15);
+            UnityEventTools.AddPersistentListener(grabButton.onClick, input.RequestGrab);
+        }
+
+        /// <summary>Menú de pausa en su propio canvas, por encima del HUD.</summary>
+        private static PauseMenu BuildPauseMenu(Transform parent, CraneInput input)
+        {
+            var canvas = Canvas(parent, "PauseCanvas", 10);
+
+            var overlay = new GameObject("Overlay", typeof(RectTransform), typeof(Image));
+            overlay.transform.SetParent(canvas, false);
+            var overlayRect = (RectTransform)overlay.transform;
+            overlayRect.anchorMin = Vector2.zero;
+            overlayRect.anchorMax = Vector2.one;
+            overlayRect.offsetMin = Vector2.zero;
+            overlayRect.offsetMax = Vector2.zero;
+            overlay.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0.65f);
+
+            var center = new Vector2(0.5f, 0.5f);
+            var main = Panel(overlay.transform, "MainPanel", center, Vector2.zero, new Vector2(360f, 320f));
+            main.GetComponent<Image>().color = new Color(0.1f, 0.12f, 0.14f, 0.95f);
+            var title = Label(main, "Title", new Vector2(0f, 110f), new Vector2(340f, 44f), TextAnchor.MiddleCenter);
+            title.text = "<b>Pausa</b>";
+            title.fontSize = 30;
+            var (resume, _) = TextButton(main, "Resume", center, new Vector2(0f, 45f), new Vector2(260f, 48f), "Reanudar", 19);
+            var (controls, _) = TextButton(main, "Controls", center, new Vector2(0f, -15f), new Vector2(260f, 48f), "Controles", 19);
+            var (restart, _) = TextButton(main, "Restart", center, new Vector2(0f, -75f), new Vector2(260f, 48f), "Reiniciar", 19);
+            var hint = Label(main, "Hint", new Vector2(0f, -132f), new Vector2(340f, 24f), TextAnchor.MiddleCenter);
+            hint.text = "P para volver al juego";
+            hint.fontSize = 13;
+            hint.color = new Color(1f, 1f, 1f, 0.6f);
+
+            var controlsPanel = Panel(overlay.transform, "ControlsPanel", center, Vector2.zero, new Vector2(560f, 460f));
+            controlsPanel.GetComponent<Image>().color = new Color(0.1f, 0.12f, 0.14f, 0.95f);
+            var controlsText = Label(controlsPanel, "Text", new Vector2(28f, -20f), new Vector2(504f, 360f), TextAnchor.UpperLeft);
+            controlsText.fontSize = 17;
+            controlsText.lineSpacing = 1.25f;
+            controlsText.text =
+                "<b>Controles</b>\n\n" +
+                "<b>A / D</b>    Mover el pórtico sobre los rieles\n" +
+                "<b>W / S</b>    Mover el carro hacia el mar / hacia tierra\n" +
+                "<b>R / F</b>    Subir / bajar el spreader\n" +
+                "<b>Q / E</b>    Girar el spreader\n" +
+                "<b>Espacio</b>  Enganchar / soltar (luz amarilla = carga lista)\n" +
+                "<b>C</b>          Cambiar de cámara\n" +
+                "<b>P</b>          Pausa\n\n" +
+                "<b>Cámara externa:</b> clic derecho y arrastrar para orbitar,\nrueda para acercar o alejar.\n\n" +
+                "Objetivo: llevar las 8 cargas del barco a la zona amarilla.";
+            var (back, _) = TextButton(controlsPanel, "Back", new Vector2(0.5f, 0f), new Vector2(0f, 20f), new Vector2(200f, 44f), "Volver", 18);
+
+            var pauseMenu = canvas.gameObject.AddComponent<PauseMenu>();
+            pauseMenu.Configure(input, overlay, main.gameObject, controlsPanel.gameObject);
+            UnityEventTools.AddPersistentListener(resume.onClick, pauseMenu.Resume);
+            UnityEventTools.AddPersistentListener(controls.onClick, pauseMenu.ShowControls);
+            UnityEventTools.AddPersistentListener(restart.onClick, pauseMenu.Restart);
+            UnityEventTools.AddPersistentListener(back.onClick, pauseMenu.ShowMain);
+
+            controlsPanel.gameObject.SetActive(false);
+            overlay.SetActive(false);
+            return pauseMenu;
+        }
+
+        private static Transform Canvas(Transform parent, string name, int sortingOrder)
+        {
+            var go = new GameObject(name, typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
+            go.transform.SetParent(parent, false);
+            var canvas = go.GetComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.sortingOrder = sortingOrder;
+            var scaler = go.GetComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1280f, 720f);
+            scaler.matchWidthOrHeight = 0.5f;
+            return go.transform;
+        }
+
+        private static (Button button, Text label) TextButton(Transform parent, string name, Vector2 anchor, Vector2 position,
+            Vector2 size, string text, int fontSize = 17)
+        {
+            var rect = Panel(parent, name, anchor, position, size);
+            var image = rect.GetComponent<Image>();
+            image.color = new Color(0.15f, 0.17f, 0.2f, 0.85f);
+            var button = rect.gameObject.AddComponent<Button>();
+            button.targetGraphic = image;
+            var label = Label(rect, "Text", Vector2.zero, size, TextAnchor.MiddleCenter);
+            label.text = text;
+            label.fontSize = fontSize;
+            return (button, label);
         }
 
         private static RectTransform Panel(Transform parent, string name, Vector2 anchor, Vector2 position, Vector2 size)

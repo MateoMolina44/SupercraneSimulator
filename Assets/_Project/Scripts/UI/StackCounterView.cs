@@ -49,9 +49,9 @@ namespace SupercraneSimulator.UI
         {
             _spreaderText.text = state switch
             {
-                GrabState.Grabbed => "Spreader: <color=#3c3>enganchado</color> (Espacio suelta)",
-                GrabState.Ready => "Spreader: <color=#fc3>carga lista</color> (Espacio engancha)",
-                _ => "Spreader: <color=#e44>sin carga</color>"
+                GrabState.Grabbed => "Spreader: <color=#77ff77>enganchado</color> (Espacio suelta)",
+                GrabState.Ready => "Spreader: <color=#ffcc33>carga lista</color> (Espacio engancha)",
+                _ => "Spreader: <color=#ff8080>sin carga</color>"
             };
         }
     }

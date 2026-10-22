@@ -22,6 +22,12 @@ namespace SupercraneSimulator.Input
         public event Action CameraPressed;
         public event Action PausePressed;
 
+        /// <summary>
+        /// Con la pausa abierta la grúa no recibe entrada (ejes en 0, sin enganche ni cambio de
+        /// cámara). La tecla de pausa sigue funcionando para poder salir.
+        /// </summary>
+        public bool Locked { get; set; }
+
         private void Awake()
         {
             _axisActions[(int)CraneAxis.Gantry] = CreateAxis("Gantry", "<Keyboard>/a", "<Keyboard>/d");
@@ -34,8 +40,8 @@ namespace SupercraneSimulator.Input
             _switchCamera = new InputAction("SwitchCamera", InputActionType.Button, "<Keyboard>/c");
             _pause = new InputAction("Pause", InputActionType.Button, "<Keyboard>/p");
 
-            _grab.performed += _ => GrabPressed?.Invoke();
-            _switchCamera.performed += _ => CameraPressed?.Invoke();
+            _grab.performed += _ => RequestGrab();
+            _switchCamera.performed += _ => RequestCameraSwitch();
             _pause.performed += _ => PausePressed?.Invoke();
         }
 
@@ -77,6 +83,11 @@ namespace SupercraneSimulator.Input
 
         public float GetAxis(CraneAxis axis)
         {
+            if (Locked)
+            {
+                return 0f;
+            }
+
             var keyboard = _axisActions[(int)axis].ReadValue<float>();
             return Mathf.Clamp(keyboard + _uiAxes[(int)axis], -1f, 1f);
         }
@@ -87,9 +98,21 @@ namespace SupercraneSimulator.Input
             _uiAxes[(int)axis] = Mathf.Clamp(value, -1f, 1f);
         }
 
-        public void RequestGrab() => GrabPressed?.Invoke();
+        public void RequestGrab()
+        {
+            if (!Locked)
+            {
+                GrabPressed?.Invoke();
+            }
+        }
 
-        public void RequestCameraSwitch() => CameraPressed?.Invoke();
+        public void RequestCameraSwitch()
+        {
+            if (!Locked)
+            {
+                CameraPressed?.Invoke();
+            }
+        }
 
         public void RequestPause() => PausePressed?.Invoke();
 
