@@ -137,11 +137,17 @@ namespace SupercraneSimulator.Editor.SceneBuilder
             RenderSettings.ambientGroundColor = new Color(0.25f, 0.25f, 0.25f);
 
             // Muelle: la parte de arriba queda en y = 0 y el borde con el agua en z = QuayEdgeZ;
-            // el paredón baja hasta el lecho para que no se vea el vacío a través del agua.
+            // el paredón baja hasta el lecho para que no se vea el vacío a través del agua. Arriba
+            // va una losa fina con el adoquinado, así la textura no se estira en las paredes.
             const float quayDepth = -SeabedY;
             const float quayWidthZ = 50f;
-            Box(parent, "Quay", new Vector3(0f, -quayDepth / 2f, QuayEdgeZ - quayWidthZ / 2f),
-                new Vector3(100f, quayDepth, quayWidthZ), _materials.Concrete);
+            const float pavingThickness = 0.1f;
+            var quay = new GameObject("Quay").transform;
+            quay.SetParent(parent, false);
+            Box(quay, "Wall", new Vector3(0f, -(quayDepth + pavingThickness) / 2f, QuayEdgeZ - quayWidthZ / 2f),
+                new Vector3(100f, quayDepth - pavingThickness, quayWidthZ), _materials.QuayWall);
+            Box(quay, "Paving", new Vector3(0f, -pavingThickness / 2f, QuayEdgeZ - quayWidthZ / 2f),
+                new Vector3(100f, pavingThickness, quayWidthZ), _materials.QuayPaving);
 
             BuildWater(parent);
             BuildShip(parent);
@@ -1352,9 +1358,11 @@ namespace SupercraneSimulator.Editor.SceneBuilder
             public readonly Material White = BuilderAssets.Material("CraneWhite", new Color(0.92f, 0.92f, 0.9f));
             public readonly Material Yellow = BuilderAssets.Material("SpreaderYellow", new Color(0.95f, 0.75f, 0.1f));
             public readonly Material Steel = BuilderAssets.Material("Steel", new Color(0.35f, 0.36f, 0.38f), 0.6f, 0.8f);
-            public readonly Material Concrete = BuilderAssets.Material("Concrete", new Color(0.55f, 0.55f, 0.53f), 0.1f);
+            // Texturas sacadas de LowpolyStreetPack; el tiling da unos 8 a 10 m por repetición.
+            public readonly Material QuayPaving = BuilderAssets.TexturedMaterial("QuayPaving", "Assets/_Project/Textures/QuayPaving.png", new Vector2(12.5f, 6.25f), new Color(0.55f, 0.55f, 0.53f));
+            public readonly Material QuayWall = BuilderAssets.TexturedMaterial("QuayWall", "Assets/_Project/Textures/QuayWall.png", new Vector2(10f, 1f), new Color(0.3f, 0.3f, 0.3f));
             public readonly Material Water = BuilderAssets.Material("Water", new Color(0.12f, 0.3f, 0.45f), 0.9f);
-            public readonly Material Seabed = BuilderAssets.Material("Seabed", new Color(0.3f, 0.28f, 0.22f));
+            public readonly Material Seabed = BuilderAssets.TexturedMaterial("Seabed", "Assets/_Project/Textures/Seabed.png", new Vector2(40f, 30f), new Color(0.3f, 0.28f, 0.22f));
             public readonly Material Hull = BuilderAssets.Material("ShipHull", new Color(0.15f, 0.18f, 0.22f));
             public readonly Material ContainerBlue = BuilderAssets.Material("ContainerBlue", new Color(0.12f, 0.3f, 0.6f));
             public readonly Material ContainerGreen = BuilderAssets.Material("ContainerGreen", new Color(0.15f, 0.45f, 0.25f));

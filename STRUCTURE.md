@@ -25,6 +25,7 @@ Assets/
 │  ├─ Models/Generated Mallas con el tamaño aplicado (las crea el builder)
 │  ├─ Models/Baked     Modelos de terceros horneados a escala real (los crea el builder)
 │  ├─ Materials/       Paleta de puerto (URP Lit, los crea el builder)
+│  ├─ Textures/        Adoquinado, paredón y lecho (sacadas de LowpolyStreetPack)
 │  └─ Physics/         PhysicsMaterials
 ├─ Megapoly.Art/                    Contenedores (pack de terceros)
 ├─ Free Stylized Cargo Props Pack/  Cajas y pallets (pack de terceros)
@@ -54,7 +55,7 @@ Main
 ├─ --- Environment ---
 │  ├─ Directional Light
 │  ├─ Global Volume
-│  ├─ Quay            (muelle)
+│  ├─ Quay            (muelle: Wall con el paredón y Paving con el adoquinado)
 │  ├─ Seabed          (lecho a −8 m, para la mezcla por profundidad del agua)
 │  ├─ Water           (48 bloques del shader de agua, sin collider)
 │  ├─ Ship            (estático, MeshCollider con la forma del barco; DeckCargo: 20 contenedores fijos)

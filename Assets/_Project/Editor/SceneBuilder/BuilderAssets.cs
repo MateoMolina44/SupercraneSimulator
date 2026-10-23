@@ -59,6 +59,20 @@ namespace SupercraneSimulator.Editor.SceneBuilder
             return material;
         }
 
+        /// <summary>
+        /// Material URP Lit con textura repetida <paramref name="tiling"/> veces por cara. Si falta
+        /// la textura queda del color dado.
+        /// </summary>
+        public static Material TexturedMaterial(string name, string texturePath, Vector2 tiling, Color fallbackColor, float smoothness = 0.1f)
+        {
+            var texture = AssetDatabase.LoadAssetAtPath<Texture2D>(texturePath);
+            var material = Material(name, texture != null ? Color.white : fallbackColor, smoothness);
+            material.SetTexture("_BaseMap", texture);
+            material.SetTextureScale("_BaseMap", tiling);
+            EditorUtility.SetDirty(material);
+            return material;
+        }
+
         public static PhysicsMaterial PhysicsMaterial(string name, float dynamicFriction, float staticFriction)
         {
             const string folder = "Assets/_Project/Physics";

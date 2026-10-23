@@ -100,6 +100,7 @@ Modelos incluidos en `Assets/`, horneados a escala real por el builder:
 - **Free Stylized Cargo Props Pack:** cajas de madera y pallets.
 - **low-poly-cargo-ship:** el barco portacontenedores.
 - **Simple Water Shader (IgniteCoders):** el agua.
+- **LowpolyStreetPack:** solo tres texturas (adoquinado, paredón y lecho), copiadas a `Assets/_Project/Textures`.
 - **25 Boats And Ships:** incluido pero sin usar.
 
 ## Documentación
