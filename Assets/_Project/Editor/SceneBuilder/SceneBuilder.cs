@@ -31,6 +31,7 @@ namespace SupercraneSimulator.Editor.SceneBuilder
         private const float GirderTopY = 16.2f;
         private const float QuayEdgeZ = 10f;
         private const float WaterY = -2f;
+        private const float SeabedY = -8f;
         private const float DeckY = 1.3f;
 
         // Zona de apilado en el muelle, al alcance del carro (z 2 a 10) y del pórtico (x ±15).
@@ -135,16 +136,59 @@ namespace SupercraneSimulator.Editor.SceneBuilder
             RenderSettings.ambientEquatorColor = new Color(0.45f, 0.48f, 0.5f);
             RenderSettings.ambientGroundColor = new Color(0.25f, 0.25f, 0.25f);
 
-            // Muelle: la parte de arriba queda en y = 0 y el borde con el agua en z = QuayEdgeZ.
-            const float quayDepth = 4f;
+            // Muelle: la parte de arriba queda en y = 0 y el borde con el agua en z = QuayEdgeZ;
+            // el paredón baja hasta el lecho para que no se vea el vacío a través del agua.
+            const float quayDepth = -SeabedY;
             const float quayWidthZ = 50f;
             Box(parent, "Quay", new Vector3(0f, -quayDepth / 2f, QuayEdgeZ - quayWidthZ / 2f),
                 new Vector3(100f, quayDepth, quayWidthZ), _materials.Concrete);
 
-            Box(parent, "Water", new Vector3(0f, WaterY - 0.05f, 60f), new Vector3(200f, 0.1f, 100f), _materials.Water, false);
-
+            BuildWater(parent);
             BuildShip(parent);
             BuildDockProps(parent, quayWidthZ);
+        }
+
+        // Simple Water Shader (IgniteCoders): bloque de 50 × 50 m subdividido, con olas en el
+        // vértice. Se usa sin la cámara de reflejo del pack (otro render por cuadro en WebGL).
+        private const string WaterMeshPath = "Assets/IgniteCoders/Simple Water Shader/Resources/WaterBlock_50m.mesh";
+        private const string WaterMaterialPath = "Assets/IgniteCoders/Simple Water Shader/Resources/Water_mat_01.mat";
+        private const float WaterBlockSize = 50f;
+        private const int WaterBlocksX = 8;
+        private const int WaterBlocksZ = 6;
+        private const float SeaStartZ = -40f; // fondo del muelle: el agua lo rodea por los costados
+
+        /// <summary>
+        /// Mar de 400 × 300 m alrededor del muelle (desde z = SeaStartZ), armado con bloques del
+        /// shader de agua, con un lecho debajo: el shader mezcla el color según la profundidad
+        /// de lo que ve abajo y sin lecho queda casi transparente. Si falta el pack, cae a una
+        /// caja plana con el material propio.
+        /// </summary>
+        private static void BuildWater(Transform parent)
+        {
+            float sizeX = WaterBlocksX * WaterBlockSize;
+            float sizeZ = WaterBlocksZ * WaterBlockSize;
+            var center = new Vector3(0f, 0f, SeaStartZ + sizeZ / 2f);
+            var mesh = AssetDatabase.LoadAssetAtPath<Mesh>(WaterMeshPath);
+            var material = AssetDatabase.LoadAssetAtPath<Material>(WaterMaterialPath);
+            if (mesh == null || material == null)
+            {
+                Box(parent, "Water", center + new Vector3(0f, WaterY - 0.05f, 0f), new Vector3(sizeX, 0.1f, sizeZ), _materials.Water, false);
+                return;
+            }
+
+            Box(parent, "Seabed", center + new Vector3(0f, SeabedY - 0.05f, 0f), new Vector3(sizeX, 0.1f, sizeZ), _materials.Seabed, false);
+
+            var water = new GameObject("Water").transform;
+            water.SetParent(parent, false);
+            for (int ix = 0; ix < WaterBlocksX; ix++)
+            {
+                for (int iz = 0; iz < WaterBlocksZ; iz++)
+                {
+                    var position = new Vector3((ix - (WaterBlocksX - 1) / 2f) * WaterBlockSize, WaterY, SeaStartZ + (iz + 0.5f) * WaterBlockSize);
+                    var block = Shape(water, $"WaterBlock_{ix}{iz}", mesh, position, material);
+                    block.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                }
+            }
         }
 
         /// <summary>Ambientación estática del muelle: bolardos, postes de luz y grúas de fondo
@@ -1310,6 +1354,7 @@ namespace SupercraneSimulator.Editor.SceneBuilder
             public readonly Material Steel = BuilderAssets.Material("Steel", new Color(0.35f, 0.36f, 0.38f), 0.6f, 0.8f);
             public readonly Material Concrete = BuilderAssets.Material("Concrete", new Color(0.55f, 0.55f, 0.53f), 0.1f);
             public readonly Material Water = BuilderAssets.Material("Water", new Color(0.12f, 0.3f, 0.45f), 0.9f);
+            public readonly Material Seabed = BuilderAssets.Material("Seabed", new Color(0.3f, 0.28f, 0.22f));
             public readonly Material Hull = BuilderAssets.Material("ShipHull", new Color(0.15f, 0.18f, 0.22f));
             public readonly Material ContainerBlue = BuilderAssets.Material("ContainerBlue", new Color(0.12f, 0.3f, 0.6f));
             public readonly Material ContainerGreen = BuilderAssets.Material("ContainerGreen", new Color(0.15f, 0.45f, 0.25f));

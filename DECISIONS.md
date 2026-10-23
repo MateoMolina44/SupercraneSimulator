@@ -4,6 +4,7 @@ Registro corto de decisiones de diseño y técnicas. La más nueva va arriba.
 
 | Fecha | Tema | Decisión | Motivo |
 |---|---|---|---|
+| 2026-10-23 | Agua | Simple Water Shader en bloques de 50 m, con lecho a −8 m, paredón del muelle hasta el lecho y depth texture activada en el asset Mobile (WebGL); sin la cámara de reflejo | Pedido de Mateo; el shader necesita algo debajo para teñir por profundidad y la cámara de reflejo sería un segundo render por cuadro en WebGL |
 | 2026-10-23 | Escenografía | 61 contenedores en la cancha, 20 en cubierta y 33 pallets/cajas, en tablas de pilas con semilla fija | Puerto con actividad sin tocar la escena a mano; se verificó que no chocan con el pórtico, el spreader ni la cámara inicial |
 | 2026-10-23 | Cajas jugables | En x = −11 (z 13 a 19,6) | Dejan lugar a la bahía de contenedores de popa y quedan fuera de la huella del spreader sobre los contenedores |
 | 2026-10-23 | Barco | Portacontenedores `low-poly-cargo-ship` corrido 10 m hacia −X y con MeshCollider; cubierta en y = 1,3 | El castillo (hasta 16,7 m) queda fuera del paso del pórtico y las cargas apoyan en la cubierta real |

@@ -30,6 +30,7 @@ Assets/
 ├─ Free Stylized Cargo Props Pack/  Cajas y pallets (pack de terceros)
 ├─ low-poly-cargo-ship/             Barco portacontenedores (pack de terceros)
 ├─ 25 Boats And Ships/              Barcos genéricos (pack de terceros, sin usar)
+├─ IgniteCoders/Simple Water Shader/  Shader de agua (pack de terceros)
 ├─ Generated/Imported/              Casco modelado en Blender (respaldo si falta el barco)
 ├─ Settings/           Assets de URP (de la plantilla)
 └─ InputSystem_Actions.inputactions   (de la plantilla, sin uso: las acciones se crean en CraneInput)
@@ -54,7 +55,8 @@ Main
 │  ├─ Directional Light
 │  ├─ Global Volume
 │  ├─ Quay            (muelle)
-│  ├─ Water
+│  ├─ Seabed          (lecho a −8 m, para la mezcla por profundidad del agua)
+│  ├─ Water           (48 bloques del shader de agua, sin collider)
 │  ├─ Ship            (estático, MeshCollider con la forma del barco; DeckCargo: 20 contenedores fijos)
 │  ├─ DockProps       (bolardos, postes, CargoStaging, ContainerYard; decorado)
 │  └─ StackZone       (volumen lógico + pintura en el piso)

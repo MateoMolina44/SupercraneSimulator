@@ -254,7 +254,7 @@ barco usan modelos de terceros horneados por el builder:
 - Muelle: gris hormigón, con bolardos, postes de luz, 3 pilas de pallets y
   cajas (33 piezas) y una cancha de 61 contenedores apilados de 1 a 3 pisos,
   fuera del paso del pórtico.
-- Agua: plano azul sin animar.
+- Agua: Simple Water Shader (IgniteCoders), 8 × 6 bloques de 50 m con olas en el vértice, sobre un lecho a −8 m (el shader tiñe según la profundidad). Sin cámara de reflejo.
 
 ## 11. Recortes si falta tiempo
 
