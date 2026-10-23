@@ -110,7 +110,15 @@ En el build Web (itch.io), además:
 - [ ] Pantalla completa funciona y P sigue pausando
 - [ ] La configuración se mantiene al recargar la página
 
-### Última corrida (2026-10-22, editor)
+### Última corrida (2026-10-23, editor, después de la escenografía)
+
+| Prueba | Resultado |
+|---|---|
+| Validate Consigna | Cumple los 10 requisitos |
+| Reposo 5 s (escena completa: agua, barco, cancha) | Cargas quietas (velocidad 0, asentamiento ≤ 2,5 cm); grúa 0,001 m/s |
+| Build Web | Generado y empaquetado (`Build/SupercraneSimulator-Web.zip`) |
+
+### Corrida anterior (2026-10-22, editor)
 
 | Prueba | Resultado |
 |---|---|
