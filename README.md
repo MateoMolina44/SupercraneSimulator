@@ -92,6 +92,15 @@ Plataforma Web, compresión Gzip y sin *Decompression Fallback* (ver
 python Tools/package_web.py Build/Web Build/SupercraneSimulator-Web.zip
 ```
 
+## Assets de terceros
+
+Modelos incluidos en `Assets/`, horneados a escala real por el builder:
+
+- **Megapoly.Art – Containers:** contenedores de 20 pies.
+- **Free Stylized Cargo Props Pack:** cajas de madera y pallets.
+- **low-poly-cargo-ship:** el barco portacontenedores.
+- **25 Boats And Ships:** incluido pero sin usar.
+
 ## Documentación
 
 | Archivo | Contenido |

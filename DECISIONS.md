@@ -4,6 +4,10 @@ Registro corto de decisiones de diseño y técnicas. La más nueva va arriba.
 
 | Fecha | Tema | Decisión | Motivo |
 |---|---|---|---|
+| 2026-10-23 | Barco | Portacontenedores `low-poly-cargo-ship` corrido 10 m hacia −X y con MeshCollider; cubierta en y = 1,3 | El castillo (hasta 16,7 m) queda fuera del paso del pórtico y las cargas apoyan en la cubierta real |
+| 2026-10-23 | Modelos de terceros | Se hornean (rotación y escala en los vértices) con `BuilderAssets.BakeModel`, con material URP propio si el del pack es Built-in | Mantiene la escala (1,1,1) que pide la consigna y evita el magenta en URP |
+| 2026-10-23 | Escenografía | Cancha de contenedores y pila de pallets en las posiciones que armó Mateo a mano, pasadas a datos en el builder | La escena se sigue generando por script; se verificó que no chocan con el pórtico |
+| 2026-10-23 | Pack de barcos | `25 Boats And Ships` sin usar | Son buques genéricos con torretas, sin cubierta plana para apilar |
 | 2026-10-22 | Idioma | Tabla en código (`Strings`) en vez de ScriptableObject | Más simple, sin asset aparte que se desincronice con la escena generada |
 | 2026-10-22 | Números | Coma en español y punto en inglés, con formato propio | En WebGL la cultura del sistema es siempre la invariante |
 | 2026-10-22 | Pausa | `timeScale` 0 + `CraneInput.Locked`; botón de pausa en el HUD además de la tecla P | Que no se mueva nada ni se enganche con el menú abierto; jugable sin teclado |

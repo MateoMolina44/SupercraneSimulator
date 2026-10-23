@@ -31,7 +31,7 @@ namespace SupercraneSimulator.Editor.SceneBuilder
         private const float GirderTopY = 16.2f;
         private const float QuayEdgeZ = 10f;
         private const float WaterY = -2f;
-        private const float DeckY = 1f;
+        private const float DeckY = 1.3f;
 
         // Zona de apilado en el muelle, al alcance del carro (z 2 a 10) y del pórtico (x ±15).
         private static readonly Vector3 StackZoneCenter = new Vector3(-5f, 0f, 4.7f);
@@ -174,15 +174,118 @@ namespace SupercraneSimulator.Editor.SceneBuilder
                 Shape(pole.transform, "Lamp", BuilderAssets.Box(new Vector3(0.6f, 0.4f, 0.6f)),
                     new Vector3(0f, 4.7f, 0f), _materials.Yellow);
             }
+
+            BuildCargoStaging(props);
+            BuildContainerYard(props);
         }
+
+        // (prefab, x, y, z, rotY)
+        private static readonly (string Prefab, float X, float Y, float Z, float RotY)[] CargoStagingProps =
+        {
+            ("SM_Pallet_Wood_01", 10.75f, 0.00f, 6.50f, 0f),
+            ("SM_Crate_Wood_Large_01", 10.76f, 0.23f, 6.45f, 0f),
+            ("SM_Shipping_Box_01", 14.51f, 0.84f, 7.10f, 0f),
+            ("SM_Pallet_Wood_01", 12.50f, 0.00f, 6.50f, 0f),
+            ("SM_Pallet_Wood_01", 14.29f, 0.00f, 6.50f, 0f),
+            ("SM_Crate_Wood_Small_01", 14.42f, 0.23f, 6.81f, 0f),
+            ("SM_Box_Wrapped_Large_01", 12.49f, -0.11f, 6.54f, 0f),
+            ("SM_Crate_Wood_Small_01", 11.44f, 0.00f, 4.68f, 0f),
+            ("SM_Crate_Wood_Small_01", 10.68f, 0.41f, 4.61f, 46.5f),
+            ("SM_Pallet_Wood_01", 9.08f, 0.00f, 5.97f, 0f),
+            ("SM_Box_Wrapped_Large_01", 9.10f, -0.12f, 5.89f, 0f),
+        };
+
+        /// <summary>Pila de pallets y cajas sueltas junto a la zona de apilado, tal como quedó
+        /// armada a mano en el editor: solo decoración, sin collider ni física.</summary>
+        private static void BuildCargoStaging(Transform parent)
+        {
+            var staging = new GameObject("CargoStaging").transform;
+            staging.SetParent(parent, false);
+
+            foreach (var p in CargoStagingProps)
+            {
+                var prefab = AssetDatabase.LoadAssetAtPath<GameObject>($"Assets/Free Stylized Cargo Props Pack/Prefab/{p.Prefab}.prefab");
+                if (prefab == null)
+                {
+                    continue;
+                }
+
+                var instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab, staging);
+                instance.transform.localPosition = new Vector3(p.X, p.Y, p.Z);
+                instance.transform.localRotation = Quaternion.Euler(0f, p.RotY, 0f);
+                instance.transform.localScale = Vector3.one;
+            }
+        }
+
+        // (color, x, y, z, rotY)
+        private static readonly (string Color, float X, float Y, float Z, float RotY)[] ContainerYardLayout =
+        {
+            ("Blue", 18.67f, 1.29f, -9.68f, 0f), ("Green", 18.52f, 1.29f, -7.21f, 0f),
+            ("Orange", 25.32f, 1.29f, -9.42f, 0f), ("Blue", 25.52f, 1.29f, -6.71f, 0f),
+            ("Orange", 39.05f, 1.29f, 1.63f, 0f), ("Green", 39.05f, 1.29f, -1.05f, 0f),
+            ("Blue", 39.05f, 1.29f, -3.54f, 0f), ("Orange", 39.05f, 1.29f, -6.01f, 0f),
+            ("Blue", 39.05f, 1.29f, 4.10f, 0f), ("Green", 39.05f, 1.29f, 6.59f, 0f),
+            ("Orange", 45.88f, 1.29f, 1.35f, 180f), ("Blue", 45.87f, 1.29f, -1.12f, 180f),
+            ("Green", 45.86f, 1.29f, -3.61f, 180f), ("Green", 45.89f, 3.95f, 1.60f, 180f),
+            ("Blue", 45.90f, 3.96f, 4.09f, 180f), ("Orange", 45.91f, 6.57f, 6.56f, 180f),
+            ("Orange", 45.91f, 3.95f, 6.56f, 180f), ("Orange", 45.88f, 1.29f, 6.69f, 0f),
+            ("Red", 45.87f, 1.29f, 4.10f, 0f),
+        };
+
+        /// <summary>Cancha de contenedores apilados más allá del alcance del pórtico (x > 16):
+        /// ambientación de puerto activo, igual a como la armaste a mano.</summary>
+        private static void BuildContainerYard(Transform parent)
+        {
+            var yard = new GameObject("ContainerYard").transform;
+            yard.SetParent(parent, false);
+
+            foreach (var c in ContainerYardLayout)
+            {
+                var prefab = AssetDatabase.LoadAssetAtPath<GameObject>($"Assets/_Project/Models/Baked/Container_Container_20FT_{c.Color}.prefab");
+                if (prefab == null)
+                {
+                    continue;
+                }
+
+                var instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab, yard);
+                instance.transform.localPosition = new Vector3(c.X, c.Y, c.Z);
+                instance.transform.localRotation = Quaternion.Euler(0f, c.RotY, 0f);
+                instance.transform.localScale = Vector3.one;
+                instance.AddComponent<BoxCollider>().size = ContainerSize;
+            }
+        }
+
+        private const string ShipModelPath = "Assets/low-poly-cargo-ship/source/Cargo_Low.fbx";
+        private const string ShipMaterialPath = "Assets/low-poly-cargo-ship/Materials/Cargo_Low_1001_BaseColor.mat";
+        // El FBX trae una escala no uniforme rarísima ya horneada en el nodo (3.28 x 10.34 x 1.49):
+        // BakeModel la absorbe sola al combinar la malla. Este factor lleva el eje largo a 60 m.
+        private const float ShipBakeScale = 0.5625f;
+        // Corrido 10 m hacia -X: el castillo (x -24 a -12 en el modelo, hasta 16.7 m de alto)
+        // queda fuera del alcance del pórtico (patas hasta x = ±21.5). Bajado para que la
+        // cubierta plana (x -11 a 20 en el modelo) quede en y = DeckY y el casco tenga calado.
+        private static readonly Vector3 ShipPivot = new Vector3(-10f, 5.36f, 17f);
 
         private static void BuildShip(Transform parent)
         {
             var ship = new GameObject("Ship").transform;
             ship.SetParent(parent, false);
 
-            // Casco: cubierta en y = DeckY, entre z = 11 y z = 23. Modelado en Blender (proa
-            // afinada) vía Supercrane/Build Scene; el .fbx queda en Assets/Generated/Imported.
+            var shipMaterial = AssetDatabase.LoadAssetAtPath<Material>(ShipMaterialPath);
+            var visual = BuilderAssets.BakeModel(ShipModelPath, "Ship_CargoLow", new Vector3(0f, 90f, 0f), ShipBakeScale, shipMaterial);
+            if (visual != null)
+            {
+                var instance = (GameObject)PrefabUtility.InstantiatePrefab(visual, ship);
+                instance.name = "Hull";
+                instance.transform.localPosition = ShipPivot;
+                instance.transform.localRotation = Quaternion.identity;
+                instance.transform.localScale = Vector3.one;
+                // Collider con la forma real (estático, no convexo): las cargas se apoyan en la
+                // cubierta y no en la caja que envuelve el castillo y los mástiles.
+                instance.AddComponent<MeshCollider>().sharedMesh = instance.GetComponent<MeshFilter>().sharedMesh;
+                return;
+            }
+
+            // Sin el modelo: casco modelado en Blender (proa afinada) + puente de cajas, como antes.
             const float hullBottom = -4f;
             var hullHeight = DeckY - hullBottom;
             ImportedShape(ship, "Hull", "Assets/Generated/Imported/Prefabs/Hull.prefab",
@@ -501,14 +604,14 @@ namespace SupercraneSimulator.Editor.SceneBuilder
         private static Load[] BuildLoads(Transform parent)
         {
             var friction = BuilderAssets.PhysicsMaterial("LoadFriction", 0.6f, 0.7f);
-            var containerColors = new[] { _materials.ContainerBlue, _materials.ContainerGreen, _materials.ContainerOrange, _materials.ContainerGrey };
+            var containerColors = new[] { _materials.ContainerBlue, _materials.ContainerGreen, _materials.ContainerOrange, _materials.ContainerRed };
             var containerPositions = new[]
             {
                 new Vector2(-4f, 14f), new Vector2(4f, 14f), new Vector2(-4f, 17.5f), new Vector2(4f, 17.5f)
             };
             var cratePositions = new[]
             {
-                new Vector2(11f, 13f), new Vector2(11f, 16f), new Vector2(11f, 19f), new Vector2(-11f, 16f)
+                new Vector2(-10f, 13f), new Vector2(-10f, 16f), new Vector2(-10f, 19f), new Vector2(-14f, 16f)
             };
 
             var crateModel = AssetDatabase.LoadAssetAtPath<GameObject>(CrateModelPath);
@@ -1126,6 +1229,7 @@ namespace SupercraneSimulator.Editor.SceneBuilder
             public readonly Material ContainerGreen = BuilderAssets.Material("ContainerGreen", new Color(0.15f, 0.45f, 0.25f));
             public readonly Material ContainerOrange = BuilderAssets.Material("ContainerOrange", new Color(0.85f, 0.4f, 0.1f));
             public readonly Material ContainerGrey = BuilderAssets.Material("ContainerGrey", new Color(0.5f, 0.52f, 0.55f));
+            public readonly Material ContainerRed = BuilderAssets.Material("ContainerRed", new Color(0.65f, 0.1f, 0.08f));
             public readonly Material Wood = BuilderAssets.Material("Wood", new Color(0.72f, 0.55f, 0.33f), 0.15f);
             public readonly Material ZoneFill = BuilderAssets.Material("ZoneFill", new Color(0.62f, 0.6f, 0.45f), 0.1f);
             public readonly Material Light = BuilderAssets.Material("StatusLight", new Color(0.85f, 0.1f, 0.1f), 0.8f);

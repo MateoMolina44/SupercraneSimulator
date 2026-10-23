@@ -34,8 +34,9 @@ Ejes del mundo:
 | Recorrido del carro | 2 a 20 m (≈2-10 m sobre muelle, ≈10-20 m sobre el barco) |
 | Recorrido del izaje | 0 a 12 m |
 | Eslabones de cable | ~1 m cada uno |
-| Contenedor 20' | 6,1 × 2,6 × 2,44 m (largo × alto × ancho) |
-| Caja | 1,5 m de lado |
+| Contenedor 20' | 6,1 × 2,58 × 2,27 m (largo × alto × ancho, el modelo Megapoly horneado) |
+| Caja | 1,52 m de lado (tamaño nativo del modelo) |
+| Barco | 60 × 18,7 × 11,3 m, cubierta plana en y = 1,3 entre x = −21 y x = 10 |
 
 ## 3. Árbol de Articulation Bodies
 
@@ -241,12 +242,16 @@ la cultura del sistema (en WebGL siempre es la invariante).
 
 ## 10. Estilo visual
 
-Primitivas de Unity con materiales URP, paleta de puerto clásico:
+La grúa y el muelle son primitivas de Unity con materiales URP. Las cargas y el
+barco usan modelos de terceros horneados por el builder:
 
 - Grúa: rojo y blanco.
-- Contenedores: colores variados (azul, verde, naranja, gris).
-- Cajas: madera clara.
-- Muelle: gris hormigón. Agua: plano azul sin animar. Barco: casco oscuro.
+- Contenedores: modelo Megapoly.Art en azul, verde, naranja y rojo.
+- Cajas: crate de madera de Free Stylized Cargo Props Pack.
+- Barco: portacontenedores low-poly texturizado, castillo a popa.
+- Muelle: gris hormigón, con bolardos, postes de luz, una pila de pallets y
+  una cancha de contenedores apilados fuera del alcance del pórtico.
+- Agua: plano azul sin animar.
 
 ## 11. Recortes si falta tiempo
 

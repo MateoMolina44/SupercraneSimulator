@@ -23,8 +23,14 @@ Assets/
 │  │  ├─ ConsignaValidator.cs  Menú "Supercrane → Validate Consigna"
 │  │  └─ SceneBuilder/ Menú "Supercrane → Build Scene"
 │  ├─ Models/Generated Mallas con el tamaño aplicado (las crea el builder)
+│  ├─ Models/Baked     Modelos de terceros horneados a escala real (los crea el builder)
 │  ├─ Materials/       Paleta de puerto (URP Lit, los crea el builder)
 │  └─ Physics/         PhysicsMaterials
+├─ Megapoly.Art/                    Contenedores (pack de terceros)
+├─ Free Stylized Cargo Props Pack/  Cajas y pallets (pack de terceros)
+├─ low-poly-cargo-ship/             Barco portacontenedores (pack de terceros)
+├─ 25 Boats And Ships/              Barcos genéricos (pack de terceros, sin usar)
+├─ Generated/Imported/              Casco modelado en Blender (respaldo si falta el barco)
 ├─ Settings/           Assets de URP (de la plantilla)
 └─ InputSystem_Actions.inputactions   (de la plantilla, sin uso: las acciones se crean en CraneInput)
 Docs/Screenshots/      Capturas para el README y la portada de itch.io
@@ -49,7 +55,8 @@ Main
 │  ├─ Global Volume
 │  ├─ Quay            (muelle)
 │  ├─ Water
-│  ├─ Ship            (estático, con colliders)
+│  ├─ Ship            (estático, MeshCollider con la forma del barco)
+│  ├─ DockProps       (bolardos, postes, CargoStaging, ContainerYard; decorado)
 │  └─ StackZone       (volumen lógico + pintura en el piso)
 ├─ --- Crane ---
 │  └─ Base → Gantry → Trolley → Hoist → CableUpper → CableLower → Spreader
@@ -74,7 +81,9 @@ Los objetos `--- X ---` son separadores vacíos, sin componentes.
 
 Las mallas no se escalan con el transform: `BuilderAssets` genera una malla
 con el tamaño final y la guarda en `Models/Generated/`. Así toda la jerarquía
-queda con escala (1,1,1).
+queda con escala (1,1,1). Los modelos de terceros que no vienen a escala real
+se hornean igual con `BuilderAssets.BakeModel` (rotación y escala aplicadas a
+los vértices) y quedan en `Models/Baked/`.
 
 ## Scripts
 
