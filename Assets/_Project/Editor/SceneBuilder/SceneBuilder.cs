@@ -141,6 +141,36 @@ namespace SupercraneSimulator.Editor.SceneBuilder
             Box(parent, "Water", new Vector3(0f, WaterY - 0.05f, 60f), new Vector3(200f, 0.1f, 100f), _materials.Water, false);
 
             BuildShip(parent);
+            BuildDockProps(parent, quayWidthZ);
+        }
+
+        /// <summary>Ambientación estática del muelle: bolardos, postes de luz y grúas de fondo
+        /// a lo lejos. No agregan Articulation Bodies ni afectan la consigna.</summary>
+        private static void BuildDockProps(Transform parent, float quayWidthZ)
+        {
+            var props = new GameObject("DockProps").transform;
+            props.SetParent(parent, false);
+
+            // Bolardos a lo largo del borde del muelle (z = QuayEdgeZ), fuera del paso de la grúa.
+            var bollards = new GameObject("Bollards").transform;
+            bollards.SetParent(props, false);
+            for (var x = -48f; x <= 48f; x += 8f)
+            {
+                Shape(bollards, "Bollard", BuilderAssets.Cylinder(0.5f, 0.7f),
+                    new Vector3(x, 0.35f, QuayEdgeZ - 0.3f), _materials.Dark);
+            }
+
+            // Postes de luz sobre el muelle, lejos de los rieles de la grúa.
+            var poles = new GameObject("LightPoles").transform;
+            poles.SetParent(props, false);
+            var poleZ = QuayEdgeZ - quayWidthZ + 4f;
+            foreach (var x in new[] { -40f, -20f, 20f, 40f })
+            {
+                var pole = Shape(poles, "LightPole", BuilderAssets.Cylinder(0.25f, 9f),
+                    new Vector3(x, 4.5f, poleZ), _materials.Steel);
+                Shape(pole.transform, "Lamp", BuilderAssets.Box(new Vector3(0.6f, 0.4f, 0.6f)),
+                    new Vector3(0f, 4.7f, 0f), _materials.Yellow);
+            }
         }
 
         private static void BuildShip(Transform parent)
@@ -148,10 +178,12 @@ namespace SupercraneSimulator.Editor.SceneBuilder
             var ship = new GameObject("Ship").transform;
             ship.SetParent(parent, false);
 
-            // Casco: cubierta en y = DeckY, entre z = 11 y z = 23.
+            // Casco: cubierta en y = DeckY, entre z = 11 y z = 23. Modelado en Blender (proa
+            // afinada) vía Supercrane/Build Scene; el .fbx queda en Assets/Generated/Imported.
             const float hullBottom = -4f;
             var hullHeight = DeckY - hullBottom;
-            Box(ship, "Hull", new Vector3(0f, hullBottom + hullHeight / 2f, 17f), new Vector3(60f, hullHeight, 12f), _materials.Hull);
+            ImportedShape(ship, "Hull", "Assets/Generated/Imported/Prefabs/Hull.prefab",
+                new Vector3(0f, hullBottom + hullHeight / 2f, 17f), new Vector3(60f, hullHeight, 12f), _materials.Hull);
             Box(ship, "Bridge", new Vector3(24f, DeckY + 5f, 17f), new Vector3(7f, 10f, 11f), _materials.White);
             Box(ship, "BridgeWindows", new Vector3(24f, DeckY + 8.5f, 11.45f), new Vector3(6f, 1.2f, 0.1f), _materials.Glass, false);
         }
@@ -995,6 +1027,34 @@ namespace SupercraneSimulator.Editor.SceneBuilder
             }
 
             return go;
+        }
+
+        /// <summary>
+        /// Instancia un prefab modelado en Blender (escala 1,1,1, pivote en el centro de
+        /// <paramref name="colliderSize"/>) con collider y material consistentes con el resto de
+        /// la escena. Si el prefab no está (no se corrió el flujo de Blender), cae a una caja.
+        /// </summary>
+        private static GameObject ImportedShape(Transform parent, string name, string prefabPath,
+            Vector3 localPosition, Vector3 colliderSize, Material material)
+        {
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+            if (prefab == null)
+            {
+                return Box(parent, name, localPosition, colliderSize, material);
+            }
+
+            var instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab, parent);
+            instance.name = name;
+            instance.transform.localPosition = localPosition;
+            instance.transform.localRotation = Quaternion.identity;
+            instance.transform.localScale = Vector3.one;
+            if (instance.TryGetComponent<MeshRenderer>(out var renderer))
+            {
+                renderer.sharedMaterial = material;
+            }
+
+            instance.AddComponent<BoxCollider>().size = colliderSize;
+            return instance;
         }
 
         private static GameObject Shape(Transform parent, string name, Mesh mesh, Vector3 localPosition, Material material)
