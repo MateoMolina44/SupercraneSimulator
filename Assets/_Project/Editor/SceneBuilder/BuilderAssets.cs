@@ -143,6 +143,93 @@ namespace SupercraneSimulator.Editor.SceneBuilder
             return mesh;
         }
 
+        /// <summary>
+        /// Combina todos los MeshRenderer de un prefab externo en un único mesh horneado, con la
+        /// rotación y escala ya aplicadas a los vértices (no al transform): así el modelo entra
+        /// a la escena con el tamaño real que necesitamos sin romper la regla de escala (1,1,1).
+        /// </summary>
+        public static GameObject BakeModel(string sourcePrefabPath, string bakedName, Vector3 eulerRotation, float uniformScale,
+            Material overrideMaterial = null)
+        {
+            const string folder = "Assets/_Project/Models/Baked";
+            var prefabPath = $"{folder}/{bakedName}.prefab";
+            var existing = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+            if (existing != null)
+            {
+                return existing;
+            }
+
+            EnsureFolder(folder);
+            var source = AssetDatabase.LoadAssetAtPath<GameObject>(sourcePrefabPath);
+            var instance = (GameObject)PrefabUtility.InstantiatePrefab(source);
+            var renderers = instance.GetComponentsInChildren<MeshRenderer>(true);
+
+            var bounds = new Bounds(instance.transform.position, Vector3.zero);
+            var first = true;
+            foreach (var r in renderers)
+            {
+                if (!r.TryGetComponent<MeshFilter>(out var mf) || mf.sharedMesh == null)
+                {
+                    continue;
+                }
+
+                var mb = mf.sharedMesh.bounds;
+                var min = r.transform.TransformPoint(mb.min);
+                var max = r.transform.TransformPoint(mb.max);
+                if (first)
+                {
+                    bounds = new Bounds((min + max) / 2f, Vector3.zero);
+                    first = false;
+                }
+
+                bounds.Encapsulate(min);
+                bounds.Encapsulate(max);
+            }
+
+            var bake = Matrix4x4.Scale(Vector3.one * uniformScale) *
+                       Matrix4x4.Rotate(Quaternion.Euler(eulerRotation)) *
+                       Matrix4x4.Translate(-bounds.center);
+
+            var combine = new List<CombineInstance>();
+            var materials = new List<Material>();
+            foreach (var r in renderers)
+            {
+                if (!r.TryGetComponent<MeshFilter>(out var mf) || mf.sharedMesh == null)
+                {
+                    continue;
+                }
+
+                for (var sub = 0; sub < mf.sharedMesh.subMeshCount; sub++)
+                {
+                    combine.Add(new CombineInstance
+                    {
+                        mesh = mf.sharedMesh,
+                        subMeshIndex = sub,
+                        transform = bake * mf.transform.localToWorldMatrix
+                    });
+                    materials.Add(sub < r.sharedMaterials.Length ? r.sharedMaterials[sub] : r.sharedMaterial);
+                }
+            }
+
+            var mesh = new Mesh { name = bakedName };
+            // Con material propio los submeshes se funden en uno solo (menos draw calls); los
+            // materiales originales del paquete suelen ser de Built-in RP y salen magenta en URP.
+            mesh.CombineMeshes(combine.ToArray(), overrideMaterial != null, true);
+            mesh.RecalculateBounds();
+            AssetDatabase.CreateAsset(mesh, $"{folder}/{bakedName}.asset");
+            Object.DestroyImmediate(instance);
+
+            var go = new GameObject(bakedName, typeof(MeshFilter), typeof(MeshRenderer));
+            go.GetComponent<MeshFilter>().sharedMesh = mesh;
+            go.GetComponent<MeshRenderer>().sharedMaterials = overrideMaterial != null
+                ? new[] { overrideMaterial }
+                : materials.ToArray();
+
+            var prefab = PrefabUtility.SaveAsPrefabAsset(go, prefabPath);
+            Object.DestroyImmediate(go);
+            return prefab;
+        }
+
         private static void EnsureFolder(string path)
         {
             if (AssetDatabase.IsValidFolder(path))

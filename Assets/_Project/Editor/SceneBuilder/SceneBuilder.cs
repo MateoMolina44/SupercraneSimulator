@@ -37,9 +37,12 @@ namespace SupercraneSimulator.Editor.SceneBuilder
         private static readonly Vector3 StackZoneCenter = new Vector3(-5f, 0f, 4.7f);
         private static readonly Vector3 StackZoneSize = new Vector3(14f, 15f, 5f);
 
-        // Medidas de las cargas (contenedor de 20 pies: largo × alto × ancho).
-        private static readonly Vector3 ContainerSize = new Vector3(6.1f, 2.6f, 2.44f);
-        private const float CrateSize = 1.5f;
+        // Medidas de las cargas (contenedor de 20 pies: largo × alto × ancho). ContainerSize sale
+        // de hornear Megapoly.Art/Containers (×2.047, rotado) a este largo real; CrateSize es el
+        // tamaño nativo de Free Stylized Cargo Props Pack (SM_Crate_Wood_Large_01), ya casi exacto.
+        private static readonly Vector3 ContainerSize = new Vector3(6.1f, 2.579f, 2.272f);
+        private const float ContainerBakeScale = 2.047f;
+        private const float CrateSize = 1.52f;
         private const float ContainerMass = 800f;
         private const float CrateMass = 150f;
 
@@ -483,6 +486,17 @@ namespace SupercraneSimulator.Editor.SceneBuilder
 
         // ---------------------------------------------------------------- Cargas y zona
 
+        // Modelos reales (Megapoly.Art / Free Stylized Cargo Props Pack) que reemplazan las cajas
+        // generadas. Si no están en el proyecto, LoadBody cae a una caja de color lisa.
+        private static readonly string[] ContainerModelPaths =
+        {
+            "Assets/Megapoly.Art/Containers/Prefabs/Container_20FT_Blue.prefab",
+            "Assets/Megapoly.Art/Containers/Prefabs/Container_20FT_Green.prefab",
+            "Assets/Megapoly.Art/Containers/Prefabs/Container_20FT_Orange.prefab",
+            "Assets/Megapoly.Art/Containers/Prefabs/Container_20FT_Red.prefab",
+        };
+        private const string CrateModelPath = "Assets/Free Stylized Cargo Props Pack/Prefab/SM_Crate_Wood_Large_01.prefab";
+
         /// <summary>4 contenedores y 4 cajas sobre la cubierta del barco (z 11 a 23).</summary>
         private static Load[] BuildLoads(Transform parent)
         {
@@ -497,14 +511,24 @@ namespace SupercraneSimulator.Editor.SceneBuilder
                 new Vector2(11f, 13f), new Vector2(11f, 16f), new Vector2(11f, 19f), new Vector2(-11f, 16f)
             };
 
+            var crateModel = AssetDatabase.LoadAssetAtPath<GameObject>(CrateModelPath);
+
             var loads = new Load[containerPositions.Length + cratePositions.Length];
             for (var i = 0; i < containerPositions.Length; i++)
             {
                 var position = new Vector3(containerPositions[i].x, DeckY + ContainerSize.y / 2f + 0.01f, containerPositions[i].y);
-                var container = LoadBody(parent, $"Container_{i + 1:00}", position, ContainerSize, containerColors[i], ContainerMass, friction, LoadKind.Container);
-                // Puertas en un extremo, para que se note el sentido del contenedor.
-                Box(container.transform, "Doors", new Vector3(ContainerSize.x / 2f + 0.01f, 0f, 0f),
-                    new Vector3(0.02f, ContainerSize.y - 0.2f, ContainerSize.z - 0.2f), _materials.Dark, false);
+                var bakedName = "Container_" + System.IO.Path.GetFileNameWithoutExtension(ContainerModelPaths[i]);
+                var visual = BuilderAssets.BakeModel(ContainerModelPaths[i], bakedName, new Vector3(0f, 90f, 0f), ContainerBakeScale,
+                    containerColors[i]);
+                var container = LoadBody(parent, $"Container_{i + 1:00}", position, ContainerSize, visual, containerColors[i],
+                    ContainerMass, friction, LoadKind.Container);
+                if (visual == null)
+                {
+                    // Sin el modelo horneado: marca de puertas en un extremo, como antes.
+                    Box(container.transform, "Doors", new Vector3(ContainerSize.x / 2f + 0.01f, 0f, 0f),
+                        new Vector3(0.02f, ContainerSize.y - 0.2f, ContainerSize.z - 0.2f), _materials.Dark, false);
+                }
+
                 loads[i] = container;
             }
 
@@ -512,16 +536,38 @@ namespace SupercraneSimulator.Editor.SceneBuilder
             {
                 var position = new Vector3(cratePositions[i].x, DeckY + CrateSize / 2f + 0.01f, cratePositions[i].y);
                 loads[containerPositions.Length + i] = LoadBody(parent, $"Crate_{i + 1:00}", position, Vector3.one * CrateSize,
-                    _materials.Wood, CrateMass, friction, LoadKind.Crate);
+                    crateModel, _materials.Wood, CrateMass, friction, LoadKind.Crate);
             }
 
             return loads;
         }
 
-        private static Load LoadBody(Transform parent, string name, Vector3 position, Vector3 size, Material material,
-            float mass, PhysicsMaterial friction, LoadKind kind)
+        /// <summary>
+        /// Cuerpo físico de una carga. Si <paramref name="visualModel"/> no es null (modelo
+        /// horneado o un prefab ya a escala real), lo instancia como hijo visual del collider;
+        /// si no, cae a una caja de color lisa con <paramref name="fallbackMaterial"/>.
+        /// </summary>
+        private static Load LoadBody(Transform parent, string name, Vector3 position, Vector3 size, GameObject visualModel,
+            Material fallbackMaterial, float mass, PhysicsMaterial friction, LoadKind kind)
         {
-            var go = Box(parent, name, position, size, material);
+            GameObject go;
+            if (visualModel != null)
+            {
+                go = new GameObject(name);
+                go.transform.SetParent(parent, false);
+                go.transform.localPosition = position;
+                go.AddComponent<BoxCollider>().size = size;
+                var visual = (GameObject)PrefabUtility.InstantiatePrefab(visualModel, go.transform);
+                visual.name = "Model";
+                visual.transform.localPosition = Vector3.zero;
+                visual.transform.localRotation = Quaternion.identity;
+                visual.transform.localScale = Vector3.one;
+            }
+            else
+            {
+                go = Box(parent, name, position, size, fallbackMaterial);
+            }
+
             go.GetComponent<BoxCollider>().sharedMaterial = friction;
             var body = go.AddComponent<Rigidbody>();
             body.mass = mass;
