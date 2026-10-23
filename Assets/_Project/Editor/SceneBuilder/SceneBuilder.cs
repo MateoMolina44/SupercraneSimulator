@@ -195,25 +195,40 @@ namespace SupercraneSimulator.Editor.SceneBuilder
             ("SM_Box_Wrapped_Large_01", 9.10f, -0.12f, 5.89f, 0f),
         };
 
-        /// <summary>Pila de pallets y cajas sueltas junto a la zona de apilado, tal como quedó
-        /// armada a mano en el editor: solo decoración, sin collider ni física.</summary>
+        // Copias de la pila de arriba en otros rincones del muelle: (desplazamiento del origen de
+        // la pila, giro en Y alrededor de ese origen). La primera es la original.
+        private static readonly Vector3 CargoStagingOrigin = new Vector3(9.08f, 0f, 4.61f);
+        private static readonly (Vector3 Origin, float RotY)[] CargoStagingCopies =
+        {
+            (new Vector3(9.08f, 0f, 4.61f), 0f),
+            (new Vector3(-27f, 0f, -20f), 90f),
+            (new Vector3(24f, 0f, -26f), 180f),
+        };
+
+        /// <summary>Pilas de pallets y cajas sueltas: la que quedó armada a mano en el editor y
+        /// dos copias giradas. Solo decoración, sin collider ni física.</summary>
         private static void BuildCargoStaging(Transform parent)
         {
             var staging = new GameObject("CargoStaging").transform;
             staging.SetParent(parent, false);
 
-            foreach (var p in CargoStagingProps)
+            foreach (var copy in CargoStagingCopies)
             {
-                var prefab = AssetDatabase.LoadAssetAtPath<GameObject>($"Assets/Free Stylized Cargo Props Pack/Prefab/{p.Prefab}.prefab");
-                if (prefab == null)
+                var rotation = Quaternion.Euler(0f, copy.RotY, 0f);
+                foreach (var p in CargoStagingProps)
                 {
-                    continue;
-                }
+                    var prefab = AssetDatabase.LoadAssetAtPath<GameObject>($"Assets/Free Stylized Cargo Props Pack/Prefab/{p.Prefab}.prefab");
+                    if (prefab == null)
+                    {
+                        continue;
+                    }
 
-                var instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab, staging);
-                instance.transform.localPosition = new Vector3(p.X, p.Y, p.Z);
-                instance.transform.localRotation = Quaternion.Euler(0f, p.RotY, 0f);
-                instance.transform.localScale = Vector3.one;
+                    var offset = new Vector3(p.X, p.Y, p.Z) - CargoStagingOrigin;
+                    var instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab, staging);
+                    instance.transform.localPosition = copy.Origin + rotation * offset;
+                    instance.transform.localRotation = Quaternion.Euler(0f, copy.RotY + p.RotY, 0f);
+                    instance.transform.localScale = Vector3.one;
+                }
             }
         }
 
@@ -232,8 +247,24 @@ namespace SupercraneSimulator.Editor.SceneBuilder
             ("Red", 45.87f, 1.29f, 4.10f, 0f),
         };
 
-        /// <summary>Cancha de contenedores apilados más allá del alcance del pórtico (x > 16):
-        /// ambientación de puerto activo, igual a como la armaste a mano.</summary>
+        // Bloques generados de la cancha, en el mismo estilo que la parte armada a mano: columnas
+        // cada 6,8 m (el largo del contenedor + pasillo), filas cada 2,5 m y pilas de 0 a 3 pisos.
+        // Pisos por pila, fila por fila (una fila = una entrada por columna).
+        private static readonly (float[] Columns, float[] Rows, int[] Tiers)[] ContainerYardBlocks =
+        {
+            // Este: sigue el bloque armado a mano hacia tierra; salta el riel de tierra (z = -12).
+            (new[] { 32.2f, 39.05f, 45.88f }, new[] { -8.5f, -14f, -16.5f, -19f, -21.5f },
+                new[] { 3, 2, 1, 2, 3, 2, 1, 2, 3, 2, 2, 2, 2, 2, 1 }),
+            // Oeste: del lado de la popa del barco. Sin columna en x = -32: tapaba la esquina
+            // inferior izquierda de la cámara externa al arrancar.
+            (new[] { -39.05f, -45.88f }, new[] { 6f, 3.5f, 1f, -1.5f },
+                new[] { 1, 3, 2, 2, 1, 2, 0, 1 }),
+        };
+
+        private static readonly string[] ContainerColorNames = { "Blue", "Green", "Orange", "Red" };
+
+        /// <summary>Cancha de contenedores apilados fuera del paso del pórtico: la parte armada a
+        /// mano en el editor más dos bloques generados. Unos 60 contenedores en total.</summary>
         private static void BuildContainerYard(Transform parent)
         {
             var yard = new GameObject("ContainerYard").transform;
@@ -241,18 +272,71 @@ namespace SupercraneSimulator.Editor.SceneBuilder
 
             foreach (var c in ContainerYardLayout)
             {
-                var prefab = AssetDatabase.LoadAssetAtPath<GameObject>($"Assets/_Project/Models/Baked/Container_Container_20FT_{c.Color}.prefab");
-                if (prefab == null)
-                {
-                    continue;
-                }
-
-                var instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab, yard);
-                instance.transform.localPosition = new Vector3(c.X, c.Y, c.Z);
-                instance.transform.localRotation = Quaternion.Euler(0f, c.RotY, 0f);
-                instance.transform.localScale = Vector3.one;
-                instance.AddComponent<BoxCollider>().size = ContainerSize;
+                StaticContainer(yard, c.Color, new Vector3(c.X, c.Y, c.Z), c.RotY);
             }
+
+            // Semilla fija: los colores y giros cambian entre pilas pero no entre regeneraciones.
+            var random = new System.Random(23);
+            foreach (var block in ContainerYardBlocks)
+            {
+                for (var row = 0; row < block.Rows.Length; row++)
+                {
+                    for (var column = 0; column < block.Columns.Length; column++)
+                    {
+                        var tiers = block.Tiers[row * block.Columns.Length + column];
+                        for (var tier = 0; tier < tiers; tier++)
+                        {
+                            var y = ContainerSize.y / 2f + tier * (ContainerSize.y + 0.02f);
+                            StaticContainer(yard, ContainerColorNames[random.Next(ContainerColorNames.Length)],
+                                new Vector3(block.Columns[column], y, block.Rows[row]), random.Next(2) * 180f);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Pilas de contenedores en cubierta, alrededor de las cargas jugables: (x, z, pisos).
+        // La bahía de popa queda entre el castillo y las cajas; la fila de z = 20,4 queda detrás
+        // de los contenedores jugables. Ninguna entra en la huella del spreader (6,1 × 2,5 m)
+        // cuando engancha una carga jugable.
+        private static readonly (float X, float Z, int Tiers)[] ShipCargoStacks =
+        {
+            (-17.4f, 13.2f, 3), (-17.4f, 15.6f, 3), (-17.4f, 18f, 3), (-17.4f, 20.4f, 3),
+            (-4f, 20.4f, 4), (4f, 20.4f, 4),
+        };
+
+        /// <summary>20 contenedores fijos en la cubierta del barco, para que la descarga
+        /// parezca un trabajo real. Tienen collider: una carga soltada encima se apoya.</summary>
+        private static void BuildShipCargo(Transform ship)
+        {
+            var cargo = new GameObject("DeckCargo").transform;
+            cargo.SetParent(ship, false);
+
+            var random = new System.Random(7);
+            foreach (var stack in ShipCargoStacks)
+            {
+                for (var tier = 0; tier < stack.Tiers; tier++)
+                {
+                    var y = DeckY + ContainerSize.y / 2f + 0.01f + tier * (ContainerSize.y + 0.02f);
+                    StaticContainer(cargo, ContainerColorNames[random.Next(ContainerColorNames.Length)],
+                        new Vector3(stack.X, y, stack.Z), random.Next(2) * 180f);
+                }
+            }
+        }
+
+        private static void StaticContainer(Transform parent, string color, Vector3 position, float rotY)
+        {
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>($"Assets/_Project/Models/Baked/Container_Container_20FT_{color}.prefab");
+            if (prefab == null)
+            {
+                return;
+            }
+
+            var instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab, parent);
+            instance.transform.localPosition = position;
+            instance.transform.localRotation = Quaternion.Euler(0f, rotY, 0f);
+            instance.transform.localScale = Vector3.one;
+            instance.AddComponent<BoxCollider>().size = ContainerSize;
         }
 
         private const string ShipModelPath = "Assets/low-poly-cargo-ship/source/Cargo_Low.fbx";
@@ -282,6 +366,7 @@ namespace SupercraneSimulator.Editor.SceneBuilder
                 // Collider con la forma real (estático, no convexo): las cargas se apoyan en la
                 // cubierta y no en la caja que envuelve el castillo y los mástiles.
                 instance.AddComponent<MeshCollider>().sharedMesh = instance.GetComponent<MeshFilter>().sharedMesh;
+                BuildShipCargo(ship);
                 return;
             }
 
@@ -292,6 +377,7 @@ namespace SupercraneSimulator.Editor.SceneBuilder
                 new Vector3(0f, hullBottom + hullHeight / 2f, 17f), new Vector3(60f, hullHeight, 12f), _materials.Hull);
             Box(ship, "Bridge", new Vector3(24f, DeckY + 5f, 17f), new Vector3(7f, 10f, 11f), _materials.White);
             Box(ship, "BridgeWindows", new Vector3(24f, DeckY + 8.5f, 11.45f), new Vector3(6f, 1.2f, 0.1f), _materials.Glass, false);
+            BuildShipCargo(ship);
         }
 
         // ---------------------------------------------------------------- Grúa
@@ -611,7 +697,7 @@ namespace SupercraneSimulator.Editor.SceneBuilder
             };
             var cratePositions = new[]
             {
-                new Vector2(-10f, 13f), new Vector2(-10f, 16f), new Vector2(-10f, 19f), new Vector2(-14f, 16f)
+                new Vector2(-11f, 13f), new Vector2(-11f, 15.2f), new Vector2(-11f, 17.4f), new Vector2(-11f, 19.6f)
             };
 
             var crateModel = AssetDatabase.LoadAssetAtPath<GameObject>(CrateModelPath);

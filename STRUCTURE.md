@@ -55,7 +55,7 @@ Main
 │  ├─ Global Volume
 │  ├─ Quay            (muelle)
 │  ├─ Water
-│  ├─ Ship            (estático, MeshCollider con la forma del barco)
+│  ├─ Ship            (estático, MeshCollider con la forma del barco; DeckCargo: 20 contenedores fijos)
 │  ├─ DockProps       (bolardos, postes, CargoStaging, ContainerYard; decorado)
 │  └─ StackZone       (volumen lógico + pintura en el piso)
 ├─ --- Crane ---

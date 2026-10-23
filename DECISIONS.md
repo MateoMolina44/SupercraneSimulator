@@ -4,6 +4,8 @@ Registro corto de decisiones de diseño y técnicas. La más nueva va arriba.
 
 | Fecha | Tema | Decisión | Motivo |
 |---|---|---|---|
+| 2026-10-23 | Escenografía | 61 contenedores en la cancha, 20 en cubierta y 33 pallets/cajas, en tablas de pilas con semilla fija | Puerto con actividad sin tocar la escena a mano; se verificó que no chocan con el pórtico, el spreader ni la cámara inicial |
+| 2026-10-23 | Cajas jugables | En x = −11 (z 13 a 19,6) | Dejan lugar a la bahía de contenedores de popa y quedan fuera de la huella del spreader sobre los contenedores |
 | 2026-10-23 | Barco | Portacontenedores `low-poly-cargo-ship` corrido 10 m hacia −X y con MeshCollider; cubierta en y = 1,3 | El castillo (hasta 16,7 m) queda fuera del paso del pórtico y las cargas apoyan en la cubierta real |
 | 2026-10-23 | Modelos de terceros | Se hornean (rotación y escala en los vértices) con `BuilderAssets.BakeModel`, con material URP propio si el del pack es Built-in | Mantiene la escala (1,1,1) que pide la consigna y evita el magenta en URP |
 | 2026-10-23 | Escenografía | Cancha de contenedores y pila de pallets en las posiciones que armó Mateo a mano, pasadas a datos en el builder | La escena se sigue generando por script; se verificó que no chocan con el pórtico |

@@ -248,9 +248,12 @@ barco usan modelos de terceros horneados por el builder:
 - Grúa: rojo y blanco.
 - Contenedores: modelo Megapoly.Art en azul, verde, naranja y rojo.
 - Cajas: crate de madera de Free Stylized Cargo Props Pack.
-- Barco: portacontenedores low-poly texturizado, castillo a popa.
-- Muelle: gris hormigón, con bolardos, postes de luz, una pila de pallets y
-  una cancha de contenedores apilados fuera del alcance del pórtico.
+- Barco: portacontenedores low-poly texturizado, castillo a popa, con 20
+  contenedores fijos en cubierta (bahía de popa de 4 × 3 y dos pilas de 4
+  detrás de los contenedores jugables) para que parezca una descarga real.
+- Muelle: gris hormigón, con bolardos, postes de luz, 3 pilas de pallets y
+  cajas (33 piezas) y una cancha de 61 contenedores apilados de 1 a 3 pisos,
+  fuera del paso del pórtico.
 - Agua: plano azul sin animar.
 
 ## 11. Recortes si falta tiempo
