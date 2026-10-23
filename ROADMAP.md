@@ -14,8 +14,8 @@ Orden de recortes en [DESIGN.md](DESIGN.md#11-recortes-si-falta-tiempo).
 - [x] Plataforma Web configurada (Gzip, sin fallback)
 - [x] Instalar el módulo **Web Build Support** en Unity Hub (Mateo)
 - [x] Primer build Web (`Build/SupercraneSimulator-Web.zip`)
-- [ ] Página de itch.io creada (Mateo)
-- [ ] **Subir el build a itch.io y probarlo** (Mateo)
+- [x] Página de itch.io creada (Mateo)
+- [x] **Subir el build a itch.io** (Mateo): <https://midir44.itch.io/supercrane-simulator>
 
 ## Hito 1 — Grúa física (jueves)
 
@@ -59,7 +59,7 @@ Orden de recortes en [DESIGN.md](DESIGN.md#11-recortes-si-falta-tiempo).
 - [x] Checklist de prueba (WORKFLOW.md) en Play
 - [ ] Checklist de prueba en WebGL (cuando esté en itch.io)
 - [x] Build WebGL final (`Build/SupercraneSimulator-Web.zip`)
-- [ ] Subirlo a itch.io (Mateo)
+- [x] Subirlo a itch.io (Mateo)
 - [x] README con controles, consigna y capturas
-- [ ] Link de itch.io en el README
+- [x] Link de itch.io en el README
 - [x] Repo limpio: sin restos de la plantilla ni carpetas generadas

@@ -116,7 +116,7 @@ En el build Web (itch.io), además:
 |---|---|
 | Validate Consigna | Cumple los 10 requisitos |
 | Reposo 5 s (escena completa: agua, barco, cancha) | Cargas quietas (velocidad 0, asentamiento ≤ 2,5 cm); grúa 0,001 m/s |
-| Build Web | Generado y empaquetado (`Build/SupercraneSimulator-Web.zip`) |
+| Build Web | Generado, empaquetado y subido a <https://midir44.itch.io/supercrane-simulator> |
 
 ### Corrida anterior (2026-10-22, editor)
 
@@ -130,4 +130,4 @@ En el build Web (itch.io), además:
 | Carga al agua | Vuelve a su lugar en el barco |
 | Pausa y configuración | Bloquea la entrada; opciones aplicadas y persistidas |
 | Órbita y zoom con mouse | Pendiente de probar a mano |
-| Build Web en itch.io | Pendiente de subir |
+| Build Web en itch.io | Subido; carga y corre sin errores en la consola (2026-10-23) |
