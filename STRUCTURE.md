@@ -30,7 +30,6 @@ Assets/
 ├─ Megapoly.Art/                    Contenedores (pack de terceros)
 ├─ Free Stylized Cargo Props Pack/  Cajas y pallets (pack de terceros)
 ├─ low-poly-cargo-ship/             Barco portacontenedores (pack de terceros)
-├─ 25 Boats And Ships/              Barcos genéricos (pack de terceros, sin usar)
 ├─ IgniteCoders/Simple Water Shader/  Shader de agua (pack de terceros)
 ├─ Generated/Imported/              Casco modelado en Blender (respaldo si falta el barco)
 ├─ Settings/           Assets de URP (de la plantilla)

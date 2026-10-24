@@ -4,6 +4,7 @@ Registro corto de decisiones de diseño y técnicas. La más nueva va arriba.
 
 | Fecha | Tema | Decisión | Motivo |
 |---|---|---|---|
+| 2026-10-23 | Pack de barcos | Se borra `25 Boats And Ships` | No se usaba (ver la decisión de abajo) |
 | 2026-10-23 | Texturas | Del LowpolyStreetPack se copian a `_Project/Textures` solo el adoquinado (piso del muelle), el hormigón oscuro (paredón) y el barro (lecho); el piso es una losa fina aparte | El resto del pack (calles, carteles, árboles) no encaja en un puerto y el atlas pesa 62 MB; la losa evita que la textura se estire en las paredes |
 | 2026-10-23 | Agua | Simple Water Shader en bloques de 50 m, con lecho a −8 m, paredón del muelle hasta el lecho y depth texture activada en el asset Mobile (WebGL); sin la cámara de reflejo | Pedido de Mateo; el shader necesita algo debajo para teñir por profundidad y la cámara de reflejo sería un segundo render por cuadro en WebGL |
 | 2026-10-23 | Escenografía | 61 contenedores en la cancha, 20 en cubierta y 33 pallets/cajas, en tablas de pilas con semilla fija | Puerto con actividad sin tocar la escena a mano; se verificó que no chocan con el pórtico, el spreader ni la cámara inicial |
