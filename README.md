@@ -96,15 +96,16 @@ python Tools/package_web.py Build/Web Build/SupercraneSimulator-Web.zip
 ## Créditos
 
 Modelos, texturas y shaders de terceros usados en el proyecto. Los modelos se
-hornean a escala real con el builder, sin tocar los archivos originales.
+hornean a escala real con el builder sin tocar sus archivos; el único archivo de
+un pack que se modificó es el graph del shader de agua.
 
 | Asset | Autor | Uso en el proyecto |
 |---|---|---|
 | [Containers](https://assetstore.unity.com/packages/3d/props/megapoly-art-containers-197278) (Unity Asset Store, gratis) | Megapoly.Art | Contenedores de 20 pies (jugables, cancha y cubierta) |
-| Free Stylized Cargo Props Pack | – | Cajas de madera y pallets |
-| Low Poly Cargo Ship (`low-poly-cargo-ship`) | – | Barco portacontenedores |
-| Simple Water Shader | IgniteCoders | Shader del agua (velocidad de las olas ajustada) |
-| [Low Poly Street Pack](https://assetstore.unity.com/packages/3d/environments/urban/low-poly-street-pack-67475) (Unity Asset Store, gratis) | – | Texturas de adoquinado, paredón y lecho (`Assets/_Project/Textures`) |
+| [Free Stylized Cargo Props Pack](https://assetstore.unity.com/packages/3d/props/free-stylized-cargo-props-pack-380006) (Unity Asset Store, gratis) | LowFrame | Cajas de madera y pallets |
+| [Low Poly Cargo Ship](https://sketchfab.com/3d-models/low-poly-cargo-ship-4c22cbaf01c1427f8ab60b3a07b1b32c) (Sketchfab, [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)) | [Javier_Fernandez](https://sketchfab.com/Javier.Fernandez) | Barco portacontenedores (escalado y rotado al hornearlo) |
+| [Simple Water Shader URP](https://assetstore.unity.com/packages/2d/textures-materials/water/simple-water-shader-urp-191449) (Unity Asset Store, gratis) | IgniteCoders | Shader del agua (velocidad de las olas ajustada) |
+| [Low Poly Street Pack](https://assetstore.unity.com/packages/3d/environments/urban/low-poly-street-pack-67475) (Unity Asset Store, gratis) | Dynamic Art | Texturas de adoquinado, paredón y lecho (`Assets/_Project/Textures`) |
 | 25 Boats And Ships | – | Incluido en el repo, sin usar |
 
 El resto (grúa, cabina, muelle, bolardos, zona de apilado, UI) está hecho con
