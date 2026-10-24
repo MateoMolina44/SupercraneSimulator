@@ -93,16 +93,23 @@ Plataforma Web, compresión Gzip y sin *Decompression Fallback* (ver
 python Tools/package_web.py Build/Web Build/SupercraneSimulator-Web.zip
 ```
 
-## Assets de terceros
+## Créditos
 
-Modelos incluidos en `Assets/`, horneados a escala real por el builder:
+Modelos, texturas y shaders de terceros usados en el proyecto. Los modelos se
+hornean a escala real con el builder, sin tocar los archivos originales.
 
-- **Megapoly.Art – Containers:** contenedores de 20 pies.
-- **Free Stylized Cargo Props Pack:** cajas de madera y pallets.
-- **low-poly-cargo-ship:** el barco portacontenedores.
-- **Simple Water Shader (IgniteCoders):** el agua.
-- **LowpolyStreetPack:** solo tres texturas (adoquinado, paredón y lecho), copiadas a `Assets/_Project/Textures`.
-- **25 Boats And Ships:** incluido pero sin usar.
+| Asset | Autor | Uso en el proyecto |
+|---|---|---|
+| [Containers](https://assetstore.unity.com/packages/3d/props/megapoly-art-containers-197278) (Unity Asset Store, gratis) | Megapoly.Art | Contenedores de 20 pies (jugables, cancha y cubierta) |
+| Free Stylized Cargo Props Pack | – | Cajas de madera y pallets |
+| Low Poly Cargo Ship (`low-poly-cargo-ship`) | – | Barco portacontenedores |
+| Simple Water Shader | IgniteCoders | Shader del agua (velocidad de las olas ajustada) |
+| [Low Poly Street Pack](https://assetstore.unity.com/packages/3d/environments/urban/low-poly-street-pack-67475) (Unity Asset Store, gratis) | – | Texturas de adoquinado, paredón y lecho (`Assets/_Project/Textures`) |
+| 25 Boats And Ships | – | Incluido en el repo, sin usar |
+
+El resto (grúa, cabina, muelle, bolardos, zona de apilado, UI) está hecho con
+primitivas generadas por `SceneBuilder`, y el casco de respaldo se modeló en
+Blender para este proyecto.
 
 ## Documentación
 
