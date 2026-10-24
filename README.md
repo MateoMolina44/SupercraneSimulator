@@ -8,6 +8,7 @@ La tarea es descargar un barco: tomar los 4 contenedores y las 4 cajas con
 el spreader y apilarlos en la zona amarilla del muelle.
 
 - **Jugar en el navegador:** <https://midir44.itch.io/supercrane-simulator>
+- **Video de demostración:** <https://youtu.be/CHNpxx6zKQs>
 - **Motor:** Unity 6000.3.14f1 (6.3 LTS), URP, Input System
 - **Plataforma:** Web (WebGL)
 
