@@ -4,6 +4,7 @@ Registro corto de decisiones de diseño y técnicas. La más nueva va arriba.
 
 | Fecha | Tema | Decisión | Motivo |
 |---|---|---|---|
+| 2026-11-18 | Seguridad | Se saca `com.unity.pipeline` (servidor HTTP que ejecuta comandos en el editor, sin uso) y los valores guardados descartan NaN/infinito; MCP for Unity queda hasta terminar el trabajo con Claude | Revisión de vulnerabilidades: el juego no tenía fallas explotables, el riesgo estaba en la máquina de desarrollo |
 | 2026-10-23 | Pack de barcos | Se borra `25 Boats And Ships` | No se usaba (ver la decisión de abajo) |
 | 2026-10-23 | Texturas | Del LowpolyStreetPack se copian a `_Project/Textures` solo el adoquinado (piso del muelle), el hormigón oscuro (paredón) y el barro (lecho); el piso es una losa fina aparte | El resto del pack (calles, carteles, árboles) no encaja en un puerto y el atlas pesa 62 MB; la losa evita que la textura se estire en las paredes |
 | 2026-10-23 | Agua | Simple Water Shader en bloques de 50 m, con lecho a −8 m, paredón del muelle hasta el lecho y depth texture activada en el asset Mobile (WebGL); sin la cámara de reflejo | Pedido de Mateo; el shader necesita algo debajo para teñir por profundidad y la cámara de reflejo sería un segundo render por cuadro en WebGL |

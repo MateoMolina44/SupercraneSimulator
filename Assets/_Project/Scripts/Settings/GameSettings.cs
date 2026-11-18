@@ -99,13 +99,23 @@ namespace SupercraneSimulator.Settings
         {
             _showControls = PlayerPrefs.GetInt(Prefix + "showControls", 1) == 1;
             _showTelemetry = PlayerPrefs.GetInt(Prefix + "showTelemetry", 1) == 1;
-            _sensitivity = Mathf.Clamp(PlayerPrefs.GetFloat(Prefix + "sensitivity", 1f), MinSensitivity, MaxSensitivity);
+            _sensitivity = ReadFloat("sensitivity", MinSensitivity, MaxSensitivity);
             for (var i = 0; i < _speeds.Length; i++)
             {
-                _speeds[i] = Mathf.Clamp(PlayerPrefs.GetFloat(Prefix + "speed" + i, 1f), MinSpeed, MaxSpeed);
+                _speeds[i] = ReadFloat("speed" + i, MinSpeed, MaxSpeed);
             }
 
             Strings.Current = (Language)PlayerPrefs.GetInt(Prefix + "language", (int)Language.Spanish);
+        }
+
+        /// <summary>
+        /// Lee un valor guardado dentro del rango. Mathf.Clamp deja pasar NaN e infinito, que
+        /// romperían la física, así que en ese caso se usa el valor por defecto (1).
+        /// </summary>
+        private static float ReadFloat(string key, float min, float max)
+        {
+            var value = PlayerPrefs.GetFloat(Prefix + key, 1f);
+            return float.IsNaN(value) || float.IsInfinity(value) ? 1f : Mathf.Clamp(value, min, max);
         }
 
         private void SaveAndApply()
